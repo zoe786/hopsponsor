@@ -12,7 +12,7 @@ load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# ---------- Generate a message draft (used by the "Draft" mode) ----------
+# ---------- Generate a message draft ----------
 def generate_message(user_prompt, style_examples, image_description=""):
     prompt = f"""
 You are a sponsor relationship assistant.
@@ -35,12 +35,12 @@ Write a message draft.
     )
     return response.choices[0].message.content
 
-# ---------- Describe an image (for flyers, etc.) ----------
+# ---------- Describe image ----------
 def describe_image(image_data: bytes) -> str:
     base64_image = base64.b64encode(image_data).decode("utf-8")
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",  # or "gpt-4-vision-preview"
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
@@ -56,12 +56,12 @@ def describe_image(image_data: bytes) -> str:
     except Exception as e:
         return f"Error describing image: {str(e)}"
 
-# ---------- Email sending (without attachment) ----------
+# ---------- Email sending ----------
 def send_email(to: str, subject: str, body: str) -> dict:
     resend.api_key = os.getenv("RESEND_API_KEY")
     try:
         params = {
-            "from": "onboarding@resend.dev",  # Replace with your verified domain
+            "from": os.getenv("RESEND_SENDER_EMAIL", "onboarding@resend.dev"),
             "to": [to],
             "subject": subject,
             "html": body,
@@ -71,7 +71,6 @@ def send_email(to: str, subject: str, body: str) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# ---------- Email sending with file attachment ----------
 def send_email_with_attachment(to: str, subject: str, body: str, file_path: str) -> dict:
     resend.api_key = os.getenv("RESEND_API_KEY")
     try:
@@ -82,7 +81,7 @@ def send_email_with_attachment(to: str, subject: str, body: str, file_path: str)
             "content": base64.b64encode(file_data).decode("utf-8")
         }
         params = {
-            "from": "onboarding@resend.dev",
+            "from": os.getenv("RESEND_SENDER_EMAIL", "onboarding@resend.dev"),
             "to": [to],
             "subject": subject,
             "html": body,
@@ -93,23 +92,22 @@ def send_email_with_attachment(to: str, subject: str, body: str, file_path: str)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# ---------- WhatsApp sending ----------
+# ---------- WhatsApp ----------
 def send_whatsapp(to: str, body: str) -> dict:
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     client_twilio = Client(account_sid, auth_token)
     try:
-        # Ensure 'to' includes country code, e.g., "+1234567890"
         message = client_twilio.messages.create(
             body=body,
-            from_='whatsapp:+14155238886',  # Twilio sandbox number
+            from_='whatsapp:+14155238886',
             to='whatsapp:' + to
         )
         return {"success": True, "sid": message.sid}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-# ---------- Tools for the Smart Assistant (chat) ----------
+# ---------- Tools for chat assistant ----------
 def query_database(sql_query: str) -> str:
     try:
         conn = sqlite3.connect("data/sponsor_assistant.db")
@@ -144,7 +142,7 @@ Write a message draft.
     )
     return response.choices[0].message.content
 
-# ---------- Tool definitions (for function calling) ----------
+# ---------- Tool definitions ----------
 tools = [
     {
         "type": "function",
@@ -192,7 +190,6 @@ tools = [
     }
 ]
 
-# ---------- Main chat assistant (for the Chat mode) ----------
 def chat_assistant(messages, style_examples, image_data=None):
     image_description = ""
     if image_data:
@@ -261,12 +258,8 @@ Use the tools when needed. Be conversational and helpful.
 
     return "I couldn't process your request."
 
-# ---------- NEW: AI‑assisted bulk file matching ----------
+# ---------- AI bulk file matching ----------
 def match_files_to_students(file_names, student_names):
-    """
-    Use OpenAI to match file names to student names.
-    Returns a dict: file_name -> student_name (or None)
-    """
     prompt = f"""
 Given the list of student names: {', '.join(student_names)}
 and these file names (without extension): {file_names}
