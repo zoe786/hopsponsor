@@ -112,7 +112,7 @@ def send_whatsapp(to: str, body: str) -> dict:
 # ---------- Tools for the Smart Assistant (chat) ----------
 def query_database(sql_query: str) -> str:
     try:
-        conn = sqlite3.connect("sponsor_assistant.db")
+        conn = sqlite3.connect("data/sponsor_assistant.db")
         df = pd.read_sql_query(sql_query, conn)
         conn.close()
         if df.empty:

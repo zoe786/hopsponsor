@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 import os
 
-DB_NAME = "sponsor_assistant.db"
+DB_NAME = "data/sponsor_assistant.db"
 
 
 def get_connection():

@@ -675,13 +675,13 @@ elif page == "Students":
             selected = st.selectbox(f"File: {f.name}", options, index=idx, key=f"bulk_{base}")
             match_data.append({"file": f, "student_name": selected})
         if st.button("✅ Confirm & Upload All"):
-            os.makedirs("reports", exist_ok=True)
+            os.makedirs("data/reports", exist_ok=True)
             for item in match_data:
                 if item["student_name"] != "None":
                     student = all_students[all_students["name"] == item["student_name"]].iloc[0]
                     ext = item["file"].name.split('.')[-1]
                     safe_name = f"{student['student_code']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
-                    file_path = os.path.join("reports", safe_name)
+                    file_path = os.path.join("data/reports", safe_name)
                     with open(file_path, "wb") as f:
                         f.write(item["file"].getbuffer())
                     report_id = add_report(student["id"], file_path, item["file"].name)
