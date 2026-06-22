@@ -38,11 +38,13 @@ import streamlit as st
 import datetime
 import os
 import pandas as pd
-import re
+
+# Ensure data folders exist
+os.makedirs("data", exist_ok=True)
+os.makedirs("data/reports", exist_ok=True)
 
 initialize_database()
 
-# ---------- PAGE CONFIG ----------
 st.set_page_config(
     page_title="Sponsor Assistant",
     page_icon="🤝",
@@ -50,7 +52,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- CUSTOM CSS ----------
+# ---------- CUSTOM CSS (same as before) ----------
 st.markdown("""
 <style>
     /* ----- Global ----- */
@@ -65,7 +67,6 @@ st.markdown("""
     .stApp {
         background: #F8FAFC;
     }
-    /* Sidebar */
     .css-1d391kg {
         background: #0F172A;
         padding-top: 1rem;
@@ -104,7 +105,6 @@ st.markdown("""
         font-size: 1.2rem;
         font-weight: 600;
     }
-    /* Cards */
     .metric-card {
         background: #FFFFFF;
         border-radius: 12px;
@@ -144,7 +144,6 @@ st.markdown("""
         display: inline-block;
         margin-top: 0.5rem;
     }
-    /* Tables */
     .dataframe-container {
         background: #FFFFFF;
         border-radius: 12px;
@@ -217,7 +216,6 @@ st.markdown("""
         background: #F1F5F9;
         color: #64748B;
     }
-    /* Filters & search */
     .filter-bar {
         display: flex;
         flex-wrap: wrap;
@@ -229,7 +227,6 @@ st.markdown("""
         flex: 1;
         min-width: 180px;
     }
-    /* Chat */
     .chat-message {
         display: flex;
         gap: 0.75rem;
@@ -280,7 +277,6 @@ st.markdown("""
         border-top: 1px solid #E2E8F0;
         margin-top: 1rem;
     }
-    /* Buttons */
     .stButton button {
         border-radius: 8px;
         font-weight: 500;
@@ -294,7 +290,6 @@ st.markdown("""
         background: #1D4ED8;
         border-color: #1D4ED8;
     }
-    /* Expander */
     .streamlit-expanderHeader {
         font-weight: 600;
         color: #0F172A;
@@ -308,7 +303,6 @@ st.markdown("""
         border-radius: 0 0 8px 8px;
         padding: 1rem;
     }
-    /* Misc */
     .section-header {
         font-size: 1.5rem;
         font-weight: 700;
@@ -357,7 +351,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # Quick stats
     sponsors_df = sponsors_to_dataframe()
     students_df = get_students()
     messages_df = messages_to_dataframe()
@@ -378,7 +371,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # Navigation
     page = st.radio(
         "Navigation",
         ["Dashboard", "Sponsors", "Students", "Assistant", "Message History", "Schedule"],
@@ -454,7 +446,6 @@ if page == "Dashboard":
 elif page == "Sponsors":
     st.markdown('<div class="section-header">👥 Sponsors</div>', unsafe_allow_html=True)
 
-    # Search and filter
     col_search, col_filter = st.columns([2, 1])
     with col_search:
         search_query = st.text_input("🔍 Search sponsors", placeholder="Name, company, email...")
@@ -468,16 +459,12 @@ elif page == "Sponsors":
             sponsors_df["Company"].str.contains(search_query, case=False, na=False) |
             sponsors_df["Email"].str.contains(search_query, case=False, na=False)
         ]
-    if not show_inactive:
-        # We don't have a status field; we'll just show all. But we can keep as placeholder.
-        pass
 
-    # Metric cards
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Sponsors", len(sponsors_df))
     with col2:
-        active = len(sponsors_df)  # placeholder
+        active = len(sponsors_df)
         st.metric("Active", active)
     with col3:
         st.metric("With Email", len(sponsors_df[sponsors_df["Email"].notna()]))
@@ -485,16 +472,8 @@ elif page == "Sponsors":
     st.divider()
 
     if not sponsors_df.empty:
-        # Custom table using HTML/CSS via markdown is too complex; we use st.dataframe with custom column config.
-        # But we need action buttons. We'll use a container with columns for each row.
-        # For simplicity and performance, we'll keep the table but add inline buttons.
-        # However, Streamlit's st.dataframe doesn't support buttons easily.
-        # We'll use a loop with columns to mimic a table.
-
-        # Show table using st.dataframe for quick view, then below show edit/delete per row.
         st.dataframe(sponsors_df[["Name", "Company", "Email", "WhatsApp"]], use_container_width=True)
 
-        # Row actions (edit/delete)
         st.subheader("Manage Sponsors")
         sponsor_names = sponsors_df["Name"].tolist()
         selected = st.selectbox("Select a sponsor to edit or delete:", ["None"] + sponsor_names)
@@ -512,7 +491,6 @@ elif page == "Sponsors":
                         st.success("Deleted!")
                         st.rerun()
 
-        # Edit form
         if "editing_sponsor" in st.session_state:
             sponsor_id = st.session_state["editing_sponsor"]
             sponsor = sponsors_df[sponsors_df["ID"] == sponsor_id].iloc[0]
@@ -542,7 +520,6 @@ elif page == "Sponsors":
 elif page == "Students":
     st.markdown('<div class="section-header">🎓 Students</div>', unsafe_allow_html=True)
 
-    # Search and filters
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         search_student = st.text_input("🔍 Search students", placeholder="Name, code...")
@@ -564,7 +541,6 @@ elif page == "Students":
     if sponsor_filter != "All":
         students_df = students_df[students_df["sponsor_name"] == sponsor_filter]
 
-    # Metrics
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Students", len(students_df))
@@ -580,7 +556,6 @@ elif page == "Students":
     if not students_df.empty:
         st.dataframe(students_df[["student_code", "name", "grade_name", "sponsor_name", "auto_send"]], use_container_width=True)
 
-        # Manage
         st.subheader("Manage Students")
         student_names = students_df["name"].tolist()
         selected_student = st.selectbox("Select a student to edit/delete:", ["None"] + student_names)
@@ -598,7 +573,6 @@ elif page == "Students":
                         st.success("Deleted!")
                         st.rerun()
 
-        # Edit form
         if "editing_student" in st.session_state:
             student_id = st.session_state["editing_student"]
             student = students_df[students_df["id"] == student_id].iloc[0]
@@ -636,7 +610,6 @@ elif page == "Students":
     else:
         st.info("No students match the criteria.")
 
-    # Bulk upload (redesigned with drag‑and‑drop)
     st.divider()
     st.subheader("📦 Bulk Upload Reports")
     st.markdown("Drag and drop files or click to browse.")
@@ -712,7 +685,6 @@ elif page == "Assistant":
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Chat display
     for msg in st.session_state.messages:
         role = msg["role"]
         avatar = "🧑" if role == "user" else "🤖"
@@ -725,7 +697,6 @@ elif page == "Assistant":
             </div>
             """, unsafe_allow_html=True)
             if msg.get("is_draft") and not msg.get("processed"):
-                # Draft approval UI
                 channel = st.selectbox("Send via:", ["Email", "WhatsApp"], key=f"ch_{msg['id']}")
                 sponsors_df = sponsors_to_dataframe()
                 recipient = st.selectbox("Recipient", ["Select..."] + sponsors_df["Name"].tolist(), key=f"rec_{msg['id']}")
@@ -764,7 +735,6 @@ elif page == "Assistant":
                         msg["content"] += "\n\n❌ Rejected."
                         st.rerun()
 
-    # Scheduling dialog
     if "sched_draft" in st.session_state:
         with st.expander("📅 Schedule", expanded=True):
             col1, col2 = st.columns(2)
@@ -796,7 +766,6 @@ elif page == "Assistant":
                         del st.session_state[k]
                 st.rerun()
 
-    # Input
     with st.container():
         prompt = st.chat_input("Type your message...")
         if prompt:
@@ -809,7 +778,7 @@ elif page == "Assistant":
                     response = chat_assistant(st.session_state.messages, style_text, img_data)
                     st.session_state.messages.append({"role": "assistant", "content": response})
                 st.rerun()
-            else:  # Draft
+            else:
                 img_desc = ""
                 if uploaded_image:
                     img_desc = describe_image(uploaded_image.read())
@@ -878,7 +847,6 @@ elif page == "Schedule":
                 col1.caption(f"📅 {row['Send Time']}")
                 with col2:
                     if st.button("Send Now", key=f"send_{row['ID']}"):
-                        # Actually send
                         sponsor = sponsors_df[sponsors_df["Name"] == row["Recipient"]].iloc[0]
                         email = sponsor["Email"]
                         if row["Channel"] == "Email" and email:
