@@ -147,8 +147,9 @@ def get_sponsors():
 
 def sponsors_to_dataframe():
     df = get_sponsors()
-    if not df.empty:
-        df.columns = ["ID", "Name", "Company", "WhatsApp", "Email", "Notes"]
+    if df.empty:
+        return pd.DataFrame(columns=["ID", "Name", "Company", "WhatsApp", "Email", "Notes"])
+    df.columns = ["ID", "Name", "Company", "WhatsApp", "Email", "Notes"]
     return df
 
 
@@ -203,8 +204,9 @@ def get_styles():
 
 def styles_to_dataframe():
     df = get_styles()
-    if not df.empty:
-        df.columns = ["ID", "Category", "Message", "Golden Example"]
+    if df.empty:
+        return pd.DataFrame(columns=["ID", "Category", "Message", "Golden Example"])
+    df.columns = ["ID", "Category", "Message", "Golden Example"]
     return df
 
 
@@ -232,8 +234,9 @@ def get_messages():
 
 def messages_to_dataframe():
     df = get_messages()
-    if not df.empty:
-        df.columns = ["ID", "Date", "Recipient", "Channel", "Direction", "Message", "Status"]
+    if df.empty:
+        return pd.DataFrame(columns=["ID", "Date", "Recipient", "Channel", "Direction", "Message", "Status"])
+    df.columns = ["ID", "Date", "Recipient", "Channel", "Direction", "Message", "Status"]
     return df
 
 
@@ -274,10 +277,9 @@ def update_scheduled_message_status(msg_id, new_status):
 
 def scheduled_messages_to_dataframe(status="pending"):
     df = get_scheduled_messages(status)
-    if not df.empty:
-        df.columns = ["ID", "Recipient", "Channel", "Message", "Send Time", "Status"]
-    else:
-        df = pd.DataFrame(columns=["ID", "Recipient", "Channel", "Message", "Send Time", "Status"])
+    if df.empty:
+        return pd.DataFrame(columns=["ID", "Recipient", "Channel", "Message", "Send Time", "Status"])
+    df.columns = ["ID", "Recipient", "Channel", "Message", "Send Time", "Status"]
     return df
 
 
@@ -294,8 +296,9 @@ def get_grades():
 
 def grades_to_dataframe():
     df = get_grades()
-    if not df.empty:
-        df.columns = ["ID", "Grade Name"]
+    if df.empty:
+        return pd.DataFrame(columns=["ID", "Grade Name"])
+    df.columns = ["ID", "Grade Name"]
     return df
 
 
@@ -345,12 +348,17 @@ def get_students():
 
 def students_to_dataframe():
     df = get_students()
-    if not df.empty:
-        df.columns = [
+    if df.empty:
+        return pd.DataFrame(columns=[
             "ID", "Student Code", "Name", "Age", "Contact Info", "Address",
             "Grade", "Sponsor", "Sponsor Email", "Sponsor Phone",
             "Auto Send", "Notes"
-        ]
+        ])
+    df.columns = [
+        "ID", "Student Code", "Name", "Age", "Contact Info", "Address",
+        "Grade", "Sponsor", "Sponsor Email", "Sponsor Phone",
+        "Auto Send", "Notes"
+    ]
     return df
 
 
@@ -425,10 +433,9 @@ def get_reports(student_id=None):
 
 def reports_to_dataframe(student_id=None):
     df = get_reports(student_id)
-    if not df.empty:
-        df.columns = ["ID", "Student ID", "File Path", "File Name", "Upload Date", "Message Sent", "Sent To"]
-    else:
-        df = pd.DataFrame(columns=["ID", "Student ID", "File Path", "File Name", "Upload Date", "Message Sent", "Sent To"])
+    if df.empty:
+        return pd.DataFrame(columns=["ID", "Student ID", "File Path", "File Name", "Upload Date", "Message Sent", "Sent To"])
+    df.columns = ["ID", "Student ID", "File Path", "File Name", "Upload Date", "Message Sent", "Sent To"]
     return df
 
 
