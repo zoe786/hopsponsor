@@ -52,89 +52,123 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- CUSTOM CSS (same as before) ----------
-st.markdown("""
+# ============================================
+# THEME TOGGLE (Dark/Light)
+# ============================================
+if "theme" not in st.session_state:
+    st.session_state.theme = "light"
+
+def toggle_theme():
+    st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
+    st.rerun()
+
+# ============================================
+# CUSTOM CSS (Dark/Light compatible)
+# ============================================
+if st.session_state.theme == "dark":
+    bg_color = "#0F172A"
+    card_bg = "#1E293B"
+    text_color = "#E2E8F0"
+    text_secondary = "#94A3B8"
+    border_color = "#334155"
+    input_bg = "#1E293B"
+    hover_bg = "#334155"
+    table_header = "#1E293B"
+else:
+    bg_color = "#F8FAFC"
+    card_bg = "#FFFFFF"
+    text_color = "#0F172A"
+    text_secondary = "#64748B"
+    border_color = "#E2E8F0"
+    input_bg = "#FFFFFF"
+    hover_bg = "#F1F5F9"
+    table_header = "#F8FAFC"
+
+st.markdown(f"""
 <style>
     /* ----- Global ----- */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    * {
+    * {{
         font-family: 'Inter', sans-serif;
-    }
-    .main .block-container {
+    }}
+    .stApp {{
+        background: {bg_color};
+        color: {text_color};
+    }}
+    .main .block-container {{
         padding-top: 1.5rem;
         padding-bottom: 1.5rem;
-    }
-    .stApp {
-        background: #F8FAFC;
-    }
-    .css-1d391kg {
-        background: #0F172A;
+    }}
+    /* ----- Sidebar ----- */
+    .css-1d391kg {{
+        background: #0F172A !important;
         padding-top: 1rem;
-    }
-    .css-1d391kg .css-1aumxhk {
-        color: #FFFFFF;
-    }
-    .css-1d391kg .css-1aumxhk:hover {
+    }}
+    .css-1d391kg .css-1aumxhk {{
+        color: #FFFFFF !important;
+    }}
+    .css-1d391kg .css-1aumxhk:hover {{
         background: rgba(37, 99, 235, 0.2);
         border-radius: 8px;
-    }
-    .sidebar-logo {
+    }}
+    .sidebar-logo {{
         font-size: 1.8rem;
         font-weight: 700;
         color: #FFFFFF;
         padding: 0.5rem 0 1.5rem 0.5rem;
         letter-spacing: -0.02em;
-    }
-    .sidebar-logo span {
+    }}
+    .sidebar-logo span {{
         color: #2563EB;
-    }
-    .sidebar-stats {
+    }}
+    .sidebar-stats {{
         background: rgba(255,255,255,0.05);
         border-radius: 8px;
         padding: 0.75rem 1rem;
         margin-bottom: 1rem;
         color: #FFFFFF;
-    }
-    .sidebar-stats .stat-label {
+    }}
+    .sidebar-stats .stat-label {{
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: #94A3B8;
-    }
-    .sidebar-stats .stat-number {
+    }}
+    .sidebar-stats .stat-number {{
         font-size: 1.2rem;
         font-weight: 600;
-    }
-    .metric-card {
-        background: #FFFFFF;
+    }}
+    /* ----- Cards ----- */
+    .metric-card {{
+        background: {card_bg};
         border-radius: 12px;
         padding: 1.25rem 1.5rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        border: 1px solid #E2E8F0;
+        border: 1px solid {border_color};
         transition: all 0.2s;
         height: 100%;
-    }
-    .metric-card:hover {
+    }}
+    .metric-card:hover {{
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         border-color: #2563EB;
-    }
-    .metric-card .metric-icon {
+    }}
+    .metric-card .metric-icon {{
         font-size: 1.8rem;
         margin-bottom: 0.25rem;
-    }
-    .metric-card .metric-number {
+    }}
+    .metric-card .metric-number {{
         font-size: 2rem;
         font-weight: 700;
-        color: #0F172A;
+        color: {text_color};
         line-height: 1.2;
-    }
-    .metric-card .metric-label {
+    }}
+    .metric-card .metric-label {{
         font-size: 0.875rem;
-        color: #64748B;
+        color: {text_secondary};
         font-weight: 500;
         margin-top: 0.25rem;
-    }
-    .metric-card .metric-trend {
+    }}
+    .metric-card .metric-trend {{
         font-size: 0.8rem;
         font-weight: 500;
         color: #10B981;
@@ -143,207 +177,140 @@ st.markdown("""
         border-radius: 20px;
         display: inline-block;
         margin-top: 0.5rem;
-    }
-    .dataframe-container {
-        background: #FFFFFF;
+    }}
+    /* ----- Editable Table ----- */
+    .dataframe-container {{
+        background: {card_bg};
         border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        overflow: hidden;
+        border: 1px solid {border_color};
+        overflow: auto;
         box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-    .dataframe-container table {
+    }}
+    .dataframe-container table {{
         width: 100%;
         border-collapse: collapse;
         font-size: 0.9rem;
-    }
-    .dataframe-container th {
-        background: #F8FAFC;
+    }}
+    .dataframe-container th {{
+        background: {table_header};
         font-weight: 600;
-        color: #0F172A;
+        color: {text_color};
         padding: 0.75rem 1rem;
         text-align: left;
-        border-bottom: 2px solid #E2E8F0;
+        border-bottom: 2px solid {border_color};
         position: sticky;
         top: 0;
         z-index: 10;
-    }
-    .dataframe-container td {
+    }}
+    .dataframe-container td {{
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #F1F5F9;
-        color: #1E293B;
-    }
-    .dataframe-container tr:hover td {
-        background: #F8FAFC;
-    }
-    .dataframe-container tr:last-child td {
+        border-bottom: 1px solid {border_color};
+        color: {text_color};
+    }}
+    .dataframe-container tr:hover td {{
+        background: {hover_bg};
+    }}
+    .dataframe-container tr:last-child td {{
         border-bottom: none;
-    }
-    .dataframe-container td .action-btn {
-        background: none;
-        border: none;
-        color: #64748B;
-        cursor: pointer;
-        font-size: 0.9rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 6px;
-        transition: all 0.15s;
-    }
-    .dataframe-container td .action-btn:hover {
-        background: #E2E8F0;
-        color: #0F172A;
-    }
-    .dataframe-container td .action-btn.edit:hover {
-        color: #2563EB;
-        background: #DBEAFE;
-    }
-    .dataframe-container td .action-btn.delete:hover {
-        color: #EF4444;
-        background: #FEE2E2;
-    }
-    .status-badge {
-        display: inline-block;
-        padding: 0.2rem 0.7rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: capitalize;
-    }
-    .status-badge.active {
-        background: #DBEAFE;
-        color: #1D4ED8;
-    }
-    .status-badge.inactive {
-        background: #F1F5F9;
-        color: #64748B;
-    }
-    .filter-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-    .filter-bar .stSelectbox, .filter-bar .stTextInput {
-        flex: 1;
-        min-width: 180px;
-    }
-    .chat-message {
-        display: flex;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-        align-items: flex-start;
-    }
-    .chat-message .avatar {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        flex-shrink: 0;
-        background: #E2E8F0;
-    }
-    .chat-message.user .avatar {
-        background: #2563EB;
-        color: white;
-    }
-    .chat-message.assistant .avatar {
-        background: #E2E8F0;
-        color: #0F172A;
-    }
-    .chat-message .bubble {
-        background: white;
-        padding: 0.75rem 1rem;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        max-width: 80%;
-        line-height: 1.6;
-    }
-    .chat-message.user .bubble {
-        background: #2563EB;
-        color: white;
-        border-color: #2563EB;
-    }
-    .chat-message.assistant .bubble {
-        background: white;
-    }
-    .sticky-chat-input {
-        position: sticky;
-        bottom: 0;
-        background: #F8FAFC;
-        padding: 1rem 0;
-        border-top: 1px solid #E2E8F0;
-        margin-top: 1rem;
-    }
-    .stButton button {
+    }}
+    /* ----- Buttons ----- */
+    .stButton button {{
         border-radius: 8px;
         font-weight: 500;
         transition: all 0.2s;
-    }
-    .stButton button[kind="primary"] {
+    }}
+    .stButton button[kind="primary"] {{
         background: #2563EB;
         border-color: #2563EB;
-    }
-    .stButton button[kind="primary"]:hover {
+        color: white;
+    }}
+    .stButton button[kind="primary"]:hover {{
         background: #1D4ED8;
         border-color: #1D4ED8;
-    }
-    .streamlit-expanderHeader {
-        font-weight: 600;
-        color: #0F172A;
-        background: #F8FAFC;
+    }}
+    .stButton button:hover {{
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }}
+    /* ----- Theme Toggle ----- */
+    .theme-toggle {{
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: {card_bg};
         border-radius: 8px;
-        border: 1px solid #E2E8F0;
-    }
-    .streamlit-expanderContent {
-        border: 1px solid #E2E8F0;
-        border-top: none;
-        border-radius: 0 0 8px 8px;
-        padding: 1rem;
-    }
-    .section-header {
+        border: 1px solid {border_color};
+        cursor: pointer;
+    }}
+    /* ----- Hierarchy Navigation ----- */
+    .hierarchy-item {{
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid {border_color};
+        background: {card_bg};
+        margin-bottom: 0.5rem;
+    }}
+    .hierarchy-item:hover {{
+        background: {hover_bg};
+        border-color: #2563EB;
+    }}
+    .hierarchy-item.active {{
+        border-color: #2563EB;
+        background: #DBEAFE;
+    }}
+    /* ----- Form Styles ----- */
+    .form-container {{
+        background: {card_bg};
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid {border_color};
+        margin: 1rem 0;
+    }}
+    .form-container h3 {{
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: {text_color};
+        border-bottom: 2px solid {border_color};
+        padding-bottom: 0.5rem;
+    }}
+    /* ----- Section Headers ----- */
+    .section-header {{
         font-size: 1.5rem;
         font-weight: 700;
-        color: #0F172A;
+        color: {text_color};
         margin-bottom: 0.5rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-    }
-    .section-subheader {
+    }}
+    .section-subheader {{
         font-size: 0.9rem;
-        color: #64748B;
+        color: {text_secondary};
         margin-bottom: 1.5rem;
-    }
-    .divider {
-        border: none;
-        height: 1px;
-        background: #E2E8F0;
-        margin: 2rem 0;
-    }
-    .empty-state {
+    }}
+    /* ----- Empty States ----- */
+    .empty-state {{
         text-align: center;
         padding: 3rem 1rem;
-        color: #94A3B8;
-    }
-    .empty-state .empty-icon {
+        color: {text_secondary};
+    }}
+    .empty-state .empty-icon {{
         font-size: 3rem;
         margin-bottom: 1rem;
-    }
-    .empty-state .empty-text {
+    }}
+    .empty-state .empty-text {{
         font-size: 1.1rem;
         font-weight: 500;
-    }
-    .empty-state .empty-sub {
-        font-size: 0.9rem;
-        color: #CBD5E1;
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- SIDEBAR ----------
+# ============================================
+# SIDEBAR
+# ============================================
 with st.sidebar:
     st.markdown("""
     <div class="sidebar-logo">
@@ -371,6 +338,13 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
+    # Theme toggle
+    theme_label = "🌙 Dark" if st.session_state.theme == "light" else "☀️ Light"
+    if st.button(theme_label, use_container_width=True):
+        toggle_theme()
+
+    st.divider()
+
     page = st.radio(
         "Navigation",
         ["Dashboard", "Sponsors", "Students", "Assistant", "Message History", "Schedule"],
@@ -380,7 +354,11 @@ with st.sidebar:
     st.divider()
     st.caption("v2.0 • SaaS Edition")
 
-# ---------- PAGE ROUTING ----------
+# ============================================
+# PAGE ROUTING
+# ============================================
+
+# ---------- DASHBOARD ----------
 if page == "Dashboard":
     st.markdown('<div class="section-header">📊 Dashboard</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-subheader">Overview of your sponsor ecosystem</div>', unsafe_allow_html=True)
@@ -442,237 +420,334 @@ if page == "Dashboard":
     else:
         st.info("No recent activity yet.")
 
-# ---------- SPONSORS ----------
+# ---------- SPONSORS (Editable Excel-like Table) ----------
 elif page == "Sponsors":
     st.markdown('<div class="section-header">👥 Sponsors</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-subheader">Editable table – click any cell to modify</div>', unsafe_allow_html=True)
 
-    col_search, col_filter = st.columns([2, 1])
-    with col_search:
-        search_query = st.text_input("🔍 Search sponsors", placeholder="Name, company, email...")
-    with col_filter:
-        show_inactive = st.checkbox("Show inactive", value=False)
+    # Get data
+    df = sponsors_to_dataframe()
 
-    sponsors_df = sponsors_to_dataframe()
-    if search_query:
-        sponsors_df = sponsors_df[
-            sponsors_df["Name"].str.contains(search_query, case=False, na=False) |
-            sponsors_df["Company"].str.contains(search_query, case=False, na=False) |
-            sponsors_df["Email"].str.contains(search_query, case=False, na=False)
-        ]
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Sponsors", len(sponsors_df))
-    with col2:
-        active = len(sponsors_df)
-        st.metric("Active", active)
-    with col3:
-        st.metric("With Email", len(sponsors_df[sponsors_df["Email"].notna()]))
-
-    st.divider()
-
-    if not sponsors_df.empty:
-        st.dataframe(sponsors_df[["Name", "Company", "Email", "WhatsApp"]], use_container_width=True)
-
-        st.subheader("Manage Sponsors")
-        sponsor_names = sponsors_df["Name"].tolist()
-        selected = st.selectbox("Select a sponsor to edit or delete:", ["None"] + sponsor_names)
-        if selected != "None":
-            sponsor = sponsors_df[sponsors_df["Name"] == selected].iloc[0]
+    # Add new sponsor
+    with st.expander("➕ Add New Sponsor", expanded=False):
+        with st.form("add_sponsor_form"):
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✏️ Edit"):
-                    st.session_state["editing_sponsor"] = sponsor["ID"]
-                    st.rerun()
+                name = st.text_input("Name")
+                company = st.text_input("Company")
             with col2:
-                if st.button("🗑️ Delete"):
-                    if st.checkbox("Confirm deletion?", key="del_sp_confirm"):
+                email = st.text_input("Email")
+                whatsapp = st.text_input("WhatsApp")
+            notes = st.text_area("Notes")
+            if st.form_submit_button("Add Sponsor"):
+                if name:
+                    add_sponsor(name, company, whatsapp, email, notes)
+                    st.success("Sponsor added!")
+                    st.rerun()
+                else:
+                    st.warning("Name is required.")
+
+    # Editable table using st.data_editor
+    if not df.empty:
+        # Drop ID column from editing view
+        display_df = df.drop(columns=["ID"])
+
+        # Show editable table
+        edited_df = st.data_editor(
+            display_df,
+            use_container_width=True,
+            num_rows="dynamic",
+            key="sponsor_editor",
+            hide_index=True,
+            column_config={
+                "Name": st.column_config.TextColumn("Name", required=True),
+                "Company": st.column_config.TextColumn("Company"),
+                "Email": st.column_config.TextColumn("Email"),
+                "WhatsApp": st.column_config.TextColumn("WhatsApp"),
+                "Notes": st.column_config.TextColumn("Notes"),
+            }
+        )
+
+        # Save changes button
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("💾 Save All Changes", use_container_width=True):
+                # We need to update the database with the edited data
+                # For each row, find the ID and update
+                for idx, row in edited_df.iterrows():
+                    # Find matching ID from original df by comparing Name
+                    original_row = df[df["Name"] == row["Name"]]
+                    if not original_row.empty:
+                        sponsor_id = original_row.iloc[0]["ID"]
+                        update_sponsor(
+                            sponsor_id,
+                            row["Name"],
+                            row["Company"],
+                            row["WhatsApp"],
+                            row["Email"],
+                            row["Notes"]
+                        )
+                st.success("All changes saved!")
+                st.rerun()
+
+        with col2:
+            # Delete selected row
+            delete_name = st.selectbox("Delete sponsor:", ["None"] + df["Name"].tolist())
+            if delete_name != "None":
+                if st.button("🗑️ Delete Selected", use_container_width=True):
+                    if st.checkbox("Confirm deletion?"):
+                        sponsor = df[df["Name"] == delete_name].iloc[0]
                         delete_sponsor(sponsor["ID"])
-                        st.success("Deleted!")
+                        st.success(f"Deleted {delete_name}!")
                         st.rerun()
-
-        if "editing_sponsor" in st.session_state:
-            sponsor_id = st.session_state["editing_sponsor"]
-            sponsor = sponsors_df[sponsors_df["ID"] == sponsor_id].iloc[0]
-            with st.expander("✏️ Edit Sponsor", expanded=True):
-                with st.form("edit_sponsor_form"):
-                    name = st.text_input("Name", value=sponsor["Name"])
-                    company = st.text_input("Company", value=sponsor["Company"])
-                    whatsapp = st.text_input("WhatsApp", value=sponsor["WhatsApp"])
-                    email = st.text_input("Email", value=sponsor["Email"])
-                    notes = st.text_area("Notes", value=sponsor["Notes"])
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.form_submit_button("💾 Save Changes"):
-                            if st.checkbox("Confirm changes?"):
-                                update_sponsor(sponsor_id, name, company, whatsapp, email, notes)
-                                st.success("Updated!")
-                                del st.session_state["editing_sponsor"]
-                                st.rerun()
-                    with col2:
-                        if st.form_submit_button("Cancel"):
-                            del st.session_state["editing_sponsor"]
-                            st.rerun()
     else:
-        st.info("No sponsors yet.")
+        st.info("No sponsors yet. Add one above.")
 
-# ---------- STUDENTS ----------
+# ---------- STUDENTS (Hierarchy: Grade → Student → Form) ----------
 elif page == "Students":
     st.markdown('<div class="section-header">🎓 Students</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        search_student = st.text_input("🔍 Search students", placeholder="Name, code...")
-    with col2:
-        grades = ["All"] + get_grades()["name"].tolist()
-        grade_filter = st.selectbox("Grade", grades)
-    with col3:
-        sponsors_df = sponsors_to_dataframe()
-        sponsor_filter = st.selectbox("Sponsor", ["All"] + sponsors_df["Name"].tolist())
+    # Session state for navigation
+    if "selected_grade" not in st.session_state:
+        st.session_state.selected_grade = None
+    if "selected_student" not in st.session_state:
+        st.session_state.selected_student = None
 
+    # Get data
     students_df = get_students()
-    if search_student:
-        students_df = students_df[
-            students_df["name"].str.contains(search_student, case=False, na=False) |
-            students_df["student_code"].str.contains(search_student, case=False, na=False)
-        ]
-    if grade_filter != "All":
-        students_df = students_df[students_df["grade_name"] == grade_filter]
-    if sponsor_filter != "All":
-        students_df = students_df[students_df["sponsor_name"] == sponsor_filter]
+    grades = get_grades()
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Students", len(students_df))
-    with col2:
-        assigned = len(students_df[students_df["sponsor_name"].notna()])
-        st.metric("Assigned to Sponsor", assigned)
-    with col3:
-        auto_send_on = len(students_df[students_df["auto_send"] == 1])
-        st.metric("Auto‑send ON", auto_send_on)
+    # ============ STEP 1: GRADE SELECTION ============
+    if st.session_state.selected_grade is None:
+        st.markdown('<div class="section-subheader">Select a grade to view students</div>', unsafe_allow_html=True)
 
-    st.divider()
+        # Show grades as cards
+        grades_list = grades["name"].tolist()
+        cols = st.columns(4)
+        for i, grade in enumerate(grades_list):
+            with cols[i % 4]:
+                student_count = len(students_df[students_df["grade_name"] == grade])
+                st.markdown(f"""
+                <div class="hierarchy-item" onclick="st.rerun()">
+                    <div style="font-size:1.2rem;font-weight:600;">{grade}</div>
+                    <div style="font-size:0.9rem;color:{text_secondary};">{student_count} students</div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"📂 {grade}", key=f"grade_{grade}"):
+                    st.session_state.selected_grade = grade
+                    st.session_state.selected_student = None
+                    st.rerun()
 
-    if not students_df.empty:
-        st.dataframe(students_df[["student_code", "name", "grade_name", "sponsor_name", "auto_send"]], use_container_width=True)
+        # Also show "Add New Student" button
+        with st.expander("➕ Add New Student", expanded=False):
+            with st.form("add_student_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    name = st.text_input("Full Name")
+                    age = st.number_input("Age", min_value=1, max_value=100, step=1)
+                with col2:
+                    grade_name = st.selectbox("Grade", grades["name"].tolist())
+                    grade_id = grades[grades["name"] == grade_name]["id"].iloc[0]
+                contact_info = st.text_input("Contact Info (phone/email)")
+                address = st.text_area("Address")
+                sponsors_df = sponsors_to_dataframe()
+                sponsor_options = ["None"] + sponsors_df["Name"].tolist()
+                sponsor_name = st.selectbox("Sponsor", sponsor_options)
+                sponsor_id = None
+                if sponsor_name != "None":
+                    sponsor_id = sponsors_df[sponsors_df["Name"] == sponsor_name]["ID"].iloc[0]
+                auto_send = st.checkbox("Auto‑send reports to sponsor", value=True)
+                notes = st.text_area("Notes (optional)")
+                if st.form_submit_button("Add Student"):
+                    if name:
+                        code = add_student(name, age, contact_info, address, grade_id, sponsor_id, auto_send, notes)
+                        st.success(f"Student {name} added with ID {code}!")
+                        st.rerun()
+                    else:
+                        st.warning("Please enter a name.")
 
-        st.subheader("Manage Students")
-        student_names = students_df["name"].tolist()
-        selected_student = st.selectbox("Select a student to edit/delete:", ["None"] + student_names)
-        if selected_student != "None":
-            student = students_df[students_df["name"] == selected_student].iloc[0]
+    # ============ STEP 2: STUDENT SELECTION ============
+    elif st.session_state.selected_grade is not None and st.session_state.selected_student is None:
+        grade = st.session_state.selected_grade
+
+        # Back button
+        if st.button("← Back to Grades"):
+            st.session_state.selected_grade = None
+            st.rerun()
+
+        st.markdown(f'<div class="section-header">📚 {grade}</div>', unsafe_allow_html=True)
+
+        # Filter students by grade
+        grade_students = students_df[students_df["grade_name"] == grade]
+
+        if not grade_students.empty:
+            # Show as cards
+            cols = st.columns(3)
+            for i, (idx, student) in enumerate(grade_students.iterrows()):
+                with cols[i % 3]:
+                    st.markdown(f"""
+                    <div class="hierarchy-item">
+                        <div style="font-size:1.1rem;font-weight:600;">{student['name']}</div>
+                        <div style="font-size:0.85rem;color:{text_secondary};">{student['student_code']}</div>
+                        <div style="font-size:0.85rem;color:{text_secondary};">Sponsor: {student['sponsor_name'] if student['sponsor_name'] else 'None'}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    if st.button(f"👤 {student['name']}", key=f"student_{student['id']}"):
+                        st.session_state.selected_student = student['id']
+                        st.rerun()
+        else:
+            st.info(f"No students in {grade}. Add one below.")
+
+            with st.expander("➕ Add Student to this Grade", expanded=True):
+                with st.form("add_student_grade_form"):
+                    name = st.text_input("Full Name")
+                    age = st.number_input("Age", min_value=1, max_value=100, step=1)
+                    contact_info = st.text_input("Contact Info")
+                    address = st.text_area("Address")
+                    grade_id = grades[grades["name"] == grade]["id"].iloc[0]
+                    sponsors_df = sponsors_to_dataframe()
+                    sponsor_options = ["None"] + sponsors_df["Name"].tolist()
+                    sponsor_name = st.selectbox("Sponsor", sponsor_options)
+                    sponsor_id = None
+                    if sponsor_name != "None":
+                        sponsor_id = sponsors_df[sponsors_df["Name"] == sponsor_name]["ID"].iloc[0]
+                    auto_send = st.checkbox("Auto‑send reports", value=True)
+                    notes = st.text_area("Notes")
+                    if st.form_submit_button("Add Student"):
+                        if name:
+                            code = add_student(name, age, contact_info, address, grade_id, sponsor_id, auto_send, notes)
+                            st.success(f"Student {name} added!")
+                            st.rerun()
+
+    # ============ STEP 3: STUDENT FORM ============
+    elif st.session_state.selected_student is not None:
+        student_id = st.session_state.selected_student
+        student = get_student(student_id)
+
+        if student is not None:
+            # Back buttons
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✏️ Edit"):
-                    st.session_state["editing_student"] = student["id"]
+                if st.button("← Back to Students"):
+                    st.session_state.selected_student = None
                     st.rerun()
             with col2:
-                if st.button("🗑️ Delete"):
-                    if st.checkbox("Confirm deletion?", key="del_st_confirm"):
-                        delete_student(student["id"])
-                        st.success("Deleted!")
-                        st.rerun()
+                if st.button("← Back to Grades"):
+                    st.session_state.selected_grade = None
+                    st.session_state.selected_student = None
+                    st.rerun()
 
-        if "editing_student" in st.session_state:
-            student_id = st.session_state["editing_student"]
-            student = students_df[students_df["id"] == student_id].iloc[0]
-            with st.expander("✏️ Edit Student", expanded=True):
-                with st.form("edit_student_form"):
-                    name = st.text_input("Name", value=student["name"])
+            # ============ STUDENT FORM (Admission-style) ============
+            st.markdown(f"""
+            <div class="form-container">
+                <h3>📋 Student Profile – {student['name']}</h3>
+                <p style="color:{text_secondary};">Student Code: {student['student_code']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Edit form
+            with st.form("student_profile_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    name = st.text_input("Full Name", value=student["name"])
                     age = st.number_input("Age", value=student["age"], min_value=1, max_value=100, step=1)
-                    contact = st.text_input("Contact", value=student["contact_info"])
-                    address = st.text_area("Address", value=student["address"])
-                    grades_df = get_grades()
-                    grade_options = grades_df["name"].tolist()
-                    grade_idx = grade_options.index(student["grade_name"]) if student["grade_name"] in grade_options else 0
+                    contact_info = st.text_input("Contact Info", value=student["contact_info"])
+                with col2:
+                    grades = get_grades()
+                    grade_options = grades["name"].tolist()
+                    current_grade = student["grade_name"]
+                    grade_idx = grade_options.index(current_grade) if current_grade in grade_options else 0
                     grade_name = st.selectbox("Grade", grade_options, index=grade_idx)
-                    grade_id = grades_df[grades_df["name"] == grade_name]["id"].iloc[0]
+                    grade_id = grades[grades["name"] == grade_name]["id"].iloc[0]
+
                     sponsors_df = sponsors_to_dataframe()
                     sponsor_options = ["None"] + sponsors_df["Name"].tolist()
                     current_sponsor = student["sponsor_name"] if student["sponsor_name"] else "None"
                     sponsor_idx = sponsor_options.index(current_sponsor) if current_sponsor in sponsor_options else 0
                     sponsor_name = st.selectbox("Sponsor", sponsor_options, index=sponsor_idx)
                     sponsor_id = None if sponsor_name == "None" else sponsors_df[sponsors_df["Name"] == sponsor_name]["ID"].iloc[0]
-                    auto_send = st.checkbox("Auto‑send reports", value=bool(student["auto_send"]))
-                    notes = st.text_area("Notes", value=student["notes"])
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.form_submit_button("💾 Save Changes"):
-                            if st.checkbox("Confirm changes?"):
-                                update_student(student_id, name, age, contact, address, grade_id, sponsor_id, auto_send, notes)
-                                st.success("Updated!")
-                                del st.session_state["editing_student"]
-                                st.rerun()
-                    with col2:
-                        if st.form_submit_button("Cancel"):
-                            del st.session_state["editing_student"]
-                            st.rerun()
-    else:
-        st.info("No students match the criteria.")
 
-    st.divider()
-    st.subheader("📦 Bulk Upload Reports")
-    st.markdown("Drag and drop files or click to browse.")
-    bulk_files = st.file_uploader(
-        "Upload report files",
-        type=["pdf", "png", "jpg", "jpeg", "docx"],
-        accept_multiple_files=True,
-        label_visibility="collapsed"
-    )
-    if bulk_files:
-        all_students = get_students()
-        if all_students.empty:
-            st.warning("Add students first.")
-        else:
-            student_names = all_students["name"].tolist()
-            file_names = [f.name.split('.')[0] for f in bulk_files]
-            if st.button("🤖 AI‑match files to students"):
-                with st.spinner("AI is analyzing..."):
-                    mapping = match_files_to_students(file_names, student_names)
-                    if mapping:
-                        st.session_state["bulk_mapping"] = mapping
-                        st.session_state["bulk_files"] = bulk_files
+                address = st.text_area("Address", value=student["address"])
+                auto_send = st.checkbox("Auto‑send reports to sponsor", value=bool(student["auto_send"]))
+                notes = st.text_area("Notes", value=student["notes"])
+
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if st.form_submit_button("💾 Save Changes", use_container_width=True):
+                        if st.checkbox("Confirm changes?"):
+                            update_student(
+                                student_id, name, age, contact_info, address,
+                                grade_id, sponsor_id, auto_send, notes
+                            )
+                            st.success("Student updated!")
+                            st.rerun()
+                with col2:
+                    if st.form_submit_button("🗑️ Delete Student", use_container_width=True):
+                        if st.checkbox("Confirm deletion? This cannot be undone."):
+                            delete_student(student_id)
+                            st.success("Student deleted!")
+                            st.session_state.selected_student = None
+                            st.rerun()
+                with col3:
+                    if st.form_submit_button("Cancel", use_container_width=True):
+                        st.session_state.selected_student = None
                         st.rerun()
-                    else:
-                        st.error("AI matching failed.")
-    if "bulk_mapping" in st.session_state:
-        st.subheader("Review matches")
-        mapping = st.session_state["bulk_mapping"]
-        files = st.session_state["bulk_files"]
-        match_data = []
-        for f in files:
-            base = f.name.split('.')[0]
-            suggested = mapping.get(base, "")
-            options = ["None"] + all_students["name"].tolist()
-            idx = options.index(suggested) if suggested in options else 0
-            selected = st.selectbox(f"File: {f.name}", options, index=idx, key=f"bulk_{base}")
-            match_data.append({"file": f, "student_name": selected})
-        if st.button("✅ Confirm & Upload All"):
-            os.makedirs("data/reports", exist_ok=True)
-            for item in match_data:
-                if item["student_name"] != "None":
-                    student = all_students[all_students["name"] == item["student_name"]].iloc[0]
-                    ext = item["file"].name.split('.')[-1]
+
+            # ============ REPORTS SECTION ============
+            st.divider()
+            st.subheader("📄 Reports")
+
+            # Upload report
+            uploaded_file = st.file_uploader(
+                "Upload a report for this student",
+                type=["pdf", "png", "jpg", "jpeg", "docx"],
+                key=f"report_{student_id}"
+            )
+            if uploaded_file:
+                if st.button("Upload and Send to Sponsor"):
+                    os.makedirs("data/reports", exist_ok=True)
+                    ext = uploaded_file.name.split('.')[-1]
                     safe_name = f"{student['student_code']}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
                     file_path = os.path.join("data/reports", safe_name)
                     with open(file_path, "wb") as f:
-                        f.write(item["file"].getbuffer())
-                    report_id = add_report(student["id"], file_path, item["file"].name)
+                        f.write(uploaded_file.getbuffer())
+
+                    report_id = add_report(student_id, file_path, uploaded_file.name)
+
                     if student["auto_send"] and student["sponsor_id"]:
                         sponsor = get_sponsor(student["sponsor_id"])
                         if sponsor and sponsor.get("email"):
-                            body = f"Dear {sponsor['name']},\n\nA new report for {student['name']} is ready.\n\nRegards."
-                            result = send_email_with_attachment(sponsor["email"], f"Report for {student['name']}", body, file_path)
+                            body = f"""
+Dear {sponsor['name']},
+
+A new report for {student['name']} (Grade: {student['grade_name']}) is now available.
+
+Student Details:
+- Age: {student['age']}
+- Contact: {student['contact_info']}
+- Address: {student['address']}
+
+Please see the attached report.
+"""
+                            result = send_email_with_attachment(
+                                sponsor["email"],
+                                f"Report for {student['name']}",
+                                body,
+                                file_path
+                            )
                             if result.get("success"):
                                 update_report_sent(report_id, sponsor["email"])
-            st.success("All uploaded and sent!")
-            del st.session_state["bulk_mapping"]
-            del st.session_state["bulk_files"]
-            st.rerun()
-        if st.button("Cancel"):
-            del st.session_state["bulk_mapping"]
-            del st.session_state["bulk_files"]
-            st.rerun()
+                                st.success("Report uploaded and sent to sponsor!")
+                            else:
+                                st.warning(f"Report uploaded but email failed: {result.get('error')}")
+                    else:
+                        st.success("Report uploaded (auto-send disabled or no sponsor assigned).")
+
+            # Show previous reports
+            reports = get_reports(student_id)
+            if not reports.empty:
+                st.subheader("Previous Reports")
+                st.dataframe(reports[["file_name", "upload_date", "message_sent", "sent_to"]], use_container_width=True)
 
 # ---------- ASSISTANT ----------
 elif page == "Assistant":
