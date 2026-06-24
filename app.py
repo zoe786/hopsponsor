@@ -365,7 +365,7 @@ with st.sidebar:
     
     # Stats
     sponsors_df = sponsors_to_dataframe()
-    students_df = students_to_dataframe()
+    students_df = get_students()   # ← changed from students_to_dataframe
     messages_df = messages_to_dataframe()
     
     col1, col2 = st.columns(2)
@@ -499,8 +499,8 @@ elif page == "Sponsors":
         # Edit/Delete options
         selected_name = st.selectbox("Select sponsor to edit/delete", df["Name"].tolist())
         if selected_name:
-            sponsor_data = df[df["Name"] == selected_name].iloc
-            col1, col2 = st.columns()
+            sponsor_data = df[df["Name"] == selected_name].iloc[0]
+            col1, col2 = st.columns(2)
             with col1:
                 st.subheader(f"Edit: {selected_name}")
                 with st.form("edit_sponsor_form"):
@@ -545,52 +545,52 @@ elif page == "Students":
             
             if st.form_submit_button("Add Student", type="primary"):
                 if student_code and name:
-                    grade_id = grades_df[grades_df["name"] == grade]["id"].values
+                    grade_id = grades_df[grades_df["name"] == grade]["id"].iloc[0]
                     sponsor_id = None
                     if sponsor:
                         sponsor_row = sponsors_df[sponsors_df["Name"] == sponsor]
-                        sponsor_id = sponsor_row["id"].values if not sponsor_row.empty else None
+                        sponsor_id = sponsor_row["ID"].iloc[0] if not sponsor_row.empty else None
                     
-                    add_student(student_code, name, age, contact_info, address, grade_id, sponsor_id, auto_send, notes)
+                    add_student(name, age, contact_info, address, grade_id, sponsor_id, auto_send, notes)
                     st.success("Student added!")
                     st.rerun()
                 else:
                     st.error("Code and Name are required.")
     
-    df = students_to_dataframe()
+    df = get_students()   # ← changed from students_to_dataframe
     if not df.empty:
         st.dataframe(df, use_container_width=True)
         
-        # Edit/Delete
-        selected_code = st.selectbox("Select student to edit/delete", df["Student Code"].tolist())
+        # Edit/Delete – use column names from df
+        selected_code = st.selectbox("Select student to edit/delete", df["student_code"].tolist())
         if selected_code:
-            student_data = df[df["Student Code"] == selected_code].iloc
-            col1, col2 = st.columns()
+            student_data = df[df["student_code"] == selected_code].iloc[0]
+            col1, col2 = st.columns(2)
             with col1:
-                st.subheader(f"Edit: {student_data['Name']}")
+                st.subheader(f"Edit: {student_data['name']}")
                 with st.form("edit_student_form"):
-                    new_name = st.text_input("Name", value=student_data["Name"])
-                    new_age = st.number_input("Age", value=int(student_data["Age"]))
-                    new_contact = st.text_input("Contact Info", value=str(student_data.get("Contact Info", "")))
-                    new_address = st.text_input("Address", value=str(student_data.get("Address", "")))
-                    new_grade = st.selectbox("Grade", grades_df["name"].tolist(), index=grades_df[grades_df["name"] == student_data["Grade"]].index if student_data.get("Grade") in grades_df["name"].values else 0)
-                    new_sponsor = st.selectbox("Sponsor", [None] + sponsors_df["Name"].tolist(), index=sponsors_df[sponsors_df["Name"] == student_data.get("Sponsor")].index+1 if student_data.get("Sponsor") in sponsors_df["Name"].values else 0)
-                    new_auto = st.checkbox("Auto Send", value=bool(student_data.get("Auto Send", True)))
-                    new_notes = st.text_area("Notes", value=str(student_data.get("Notes", "")))
+                    new_name = st.text_input("Name", value=student_data["name"])
+                    new_age = st.number_input("Age", value=int(student_data["age"]))
+                    new_contact = st.text_input("Contact Info", value=str(student_data.get("contact_info", "")))
+                    new_address = st.text_input("Address", value=str(student_data.get("address", "")))
+                    new_grade = st.selectbox("Grade", grades_df["name"].tolist(), index=grades_df[grades_df["name"] == student_data["grade_name"]].index[0] if student_data["grade_name"] in grades_df["name"].values else 0)
+                    new_sponsor = st.selectbox("Sponsor", [None] + sponsors_df["Name"].tolist(), index=sponsors_df[sponsors_df["Name"] == student_data["sponsor_name"]].index[0]+1 if student_data.get("sponsor_name") in sponsors_df["Name"].values else 0)
+                    new_auto = st.checkbox("Auto Send", value=bool(student_data.get("auto_send", True)))
+                    new_notes = st.text_area("Notes", value=str(student_data.get("notes", "")))
                     
                     if st.form_submit_button("Update Student", type="primary"):
-                        grade_id = grades_df[grades_df["name"] == new_grade]["id"].values
+                        grade_id = grades_df[grades_df["name"] == new_grade]["id"].iloc[0]
                         sponsor_id = None
                         if new_sponsor:
                             sponsor_row = sponsors_df[sponsors_df["Name"] == new_sponsor]
-                            sponsor_id = sponsor_row["id"].values if not sponsor_row.empty else None
+                            sponsor_id = sponsor_row["ID"].iloc[0] if not sponsor_row.empty else None
                         
-                        update_student(int(student_data["ID"]), new_name, new_age, new_contact, new_address, grade_id, sponsor_id, new_auto, new_notes)
+                        update_student(int(student_data["id"]), new_name, new_age, new_contact, new_address, grade_id, sponsor_id, new_auto, new_notes)
                         st.success("Updated!")
                         st.rerun()
             with col2:
                 if st.button("🗑️ Delete Student", type="primary"):
-                    delete_student(int(student_data["ID"]))
+                    delete_student(int(student_data["id"]))
                     st.success("Deleted!")
                     st.rerun()
     else:
@@ -609,12 +609,12 @@ elif page == "Messages":
         subject = st.text_input("Subject (Email only)")
         message = st.text_area("Message")
         
-        col1, col2 = st.columns()
+        col1, col2 = st.columns(2)
         with col1:
             send_btn = st.button("Send", type="primary")
         
         if send_btn and message:
-            sponsor_data = sponsors_df[sponsors_df["Name"] == recipient].iloc
+            sponsor_data = sponsors_df[sponsors_df["Name"] == recipient].iloc[0]
             success = False
             
             if channel == "Email":
@@ -674,7 +674,7 @@ elif page == "AI Drafting":
     st.markdown('<div class="section-header fade-in">✨ AI Message Drafting</div>', unsafe_allow_html=True)
     
     styles_df = styles_to_dataframe()
-    styles_text = "\n".join(styles_df["Example"].tolist()) if not styles_df.empty else "No examples provided."
+    styles_text = "\n".join(styles_df["Message"].tolist()) if not styles_df.empty else "No examples provided."
     
     uploaded_file = st.file_uploader("Upload image (optional)", type=["png", "jpg", "jpeg"])
     image_description = ""
@@ -736,7 +736,7 @@ elif page == "Chat Assistant":
         
         with st.spinner("Thinking..."):
             styles_df = styles_to_dataframe()
-            styles_text = "\n".join(styles_df["Example"].tolist()) if not styles_df.empty else ""
+            styles_text = "\n".join(styles_df["Message"].tolist()) if not styles_df.empty else ""
             
             response = chat_assistant(st.session_state.chat_messages, styles_text)
             st.session_state.chat_messages.append({"role": "assistant", "content": response})
@@ -750,29 +750,32 @@ elif page == "Chat Assistant":
 elif page == "Reports":
     st.markdown('<div class="section-header fade-in">📄 Student Reports</div>', unsafe_allow_html=True)
     
-    students_df = students_to_dataframe()
+    students_df = get_students()   # ← changed from students_to_dataframe
     if students_df.empty:
         st.warning("No students found.")
     else:
         uploaded_files = st.file_uploader("Upload report files", accept_multiple_files=True, type=["pdf", "doc", "docx"])
         if uploaded_files:
-            student_names = students_df["Name"].tolist()
-            file_names = [f.name.rsplit(".", 1) for f in uploaded_files]
+            student_names = students_df["name"].tolist()
+            file_names = [f.name for f in uploaded_files]  # keep full name for matching
             
             with st.spinner("Matching files to students..."):
-                mapping = match_files_to_students(file_names, student_names)
+                # We'll match using the AI function that expects list of file names without extension?
+                # We'll adapt: we can strip extension for matching.
+                base_names = [f.rsplit(".", 1)[0] for f in file_names]
+                mapping = match_files_to_students(base_names, student_names)
             
             st.subheader("File Matching Results")
-            for fname, sname in mapping.items():
+            for f, (base, sname) in zip(uploaded_files, mapping.items()):
                 status = "✅" if sname else "❌"
-                st.write(f"{status} {fname} → {sname or 'Unknown'}")
+                st.write(f"{status} {f.name} → {sname or 'Unknown'}")
             
             if st.button("Save All Matched"):
-                for f, (fname, sname) in zip(uploaded_files, mapping.items()):
+                for f, (base, sname) in zip(uploaded_files, mapping.items()):
                     if sname:
-                        student_row = students_df[students_df["Name"] == sname]
+                        student_row = students_df[students_df["name"] == sname]
                         if not student_row.empty:
-                            student_id = student_row.iloc["ID"]
+                            student_id = student_row.iloc[0]["id"]
                             save_path = f"data/reports/{f.name}"
                             with open(save_path, "wb") as out:
                                 out.write(f.getbuffer())
@@ -835,12 +838,12 @@ elif page == "Schedule":
     if not pending_df.empty:
         for _, row in pending_df.iterrows():
             with st.container():
-                col1, col2, col3 = st.columns()
+                col1, col2, col3 = st.columns([3, 1, 1])
                 col1.write(f"**{row['Recipient']}** – {row['Message'][:60]}...")
                 col1.caption(f"📅 {row['Send Time']}")
                 with col2:
                     if st.button("Send Now", key=f"send_{row['ID']}"):
-                        sponsor = sponsors_df[sponsors_df["Name"] == row["Recipient"]].iloc
+                        sponsor = sponsors_df[sponsors_df["Name"] == row["Recipient"]].iloc[0]
                         email = sponsor["Email"]
                         if row["Channel"] == "Email" and email:
                             res = send_email(email, "Scheduled", row["Message"])
