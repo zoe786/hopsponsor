@@ -39,6 +39,7 @@ import streamlit as st
 import datetime
 import os
 import pandas as pd
+import html
 
 # Ensure data folders exist
 os.makedirs("data", exist_ok=True)
@@ -59,6 +60,18 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    :root {
+        --hope-bg: #0B0B1A;
+        --hope-panel: rgba(255,255,255,0.04);
+        --hope-panel-strong: rgba(255,255,255,0.06);
+        --hope-border: rgba(139,92,246,0.18);
+        --hope-border-strong: rgba(139,92,246,0.3);
+        --hope-accent: #7C3AED;
+        --hope-accent-soft: #C4B5FD;
+        --hope-text: #F1F5F9;
+        --hope-muted: #94A3B8;
+    }
 
     /* ─── Reset & Base ─── */
     *, *::before, *::after { font-family: 'Inter', sans-serif !important; box-sizing: border-box; }
@@ -400,6 +413,17 @@ st.markdown("""
     }
     .hope-logo .accent { color: #A78BFA; }
     .hope-logo .dot    { color: #7C3AED; font-size:1.8rem; }
+    .sidebar-brand-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(124,58,237,0.22);
+        border: 1px solid rgba(139,92,246,0.35);
+        box-shadow: 0 0 16px rgba(124,58,237,0.22);
+    }
 
     /* ─── Dividers ─── */
     .sidebar-divider {
@@ -427,6 +451,68 @@ st.markdown("""
     .activity-row:last-child { border-bottom: none; }
     .activity-name { font-size: 0.9rem; font-weight: 600; color: #E2E8F0; }
     .activity-meta { font-size: 0.78rem; color: #64748B; margin-top: 2px; }
+    .activity-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .activity-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(124,58,237,0.25);
+        border: 1px solid rgba(139,92,246,0.35);
+        color: #DDD6FE;
+        font-size: 0.8rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .activity-excerpt {
+        font-size: 0.8rem;
+        color: #94A3B8;
+        margin-top: 1px;
+        max-width: 520px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .table-search-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.8rem 1.2rem;
+        border-bottom: 1px solid rgba(139,92,246,0.16);
+        color: #94A3B8;
+        font-size: 0.8rem;
+    }
+    .ref-style-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(139,92,246,0.2);
+        border-radius: 10px;
+        padding: 0.65rem 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    .ref-style-title {
+        color: #DDD6FE;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.3rem;
+    }
+    .ref-style-text {
+        color: #94A3B8;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+        outline: 2px solid rgba(167,139,250,0.65) !important;
+        outline-offset: 1px !important;
+    }
 
     /* ─── Animations ─── */
     @keyframes fadeUp {
@@ -479,6 +565,38 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+def safe_text(value):
+    if value is None:
+        return "—"
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return "—"
+    return html.escape(text)
+
+
+def render_table_container(df, columns, headers, row_label, search_text):
+    st.markdown('<div class="table-container fade-in">', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="table-search-row"><span>{len(df)} {row_label} found</span><span>Search: {safe_text(search_text) if search_text else "All"}</span></div>',
+        unsafe_allow_html=True
+    )
+    grid = "1.2fr 1fr 1.2fr 0.8fr"
+    st.markdown(
+        f'<div class="table-header-row" style="grid-template-columns:{grid};">' +
+        "".join(f"<div>{safe_text(h)}</div>" for h in headers) +
+        '</div>',
+        unsafe_allow_html=True
+    )
+    for _, row in df.iterrows():
+        st.markdown(
+            f'<div class="table-row" style="grid-template-columns:{grid};">' +
+            "".join(f"<div>{safe_text(row.get(col, '—'))}</div>" for col in columns) +
+            '</div>',
+            unsafe_allow_html=True
+        )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 # ============================================
 # SIDEBAR
 # ============================================
@@ -486,6 +604,7 @@ with st.sidebar:
     # Logo
     st.markdown('''
     <div class="hope-logo">
+        <span class="sidebar-brand-icon">✦</span>
         <span class="accent">HOP</span><span>e</span>
     </div>
     ''', unsafe_allow_html=True)
@@ -522,11 +641,21 @@ with st.sidebar:
     if "active_section" not in st.session_state:
         st.session_state.active_section = "core"
 
+    core_icon_map = {
+        "Dashboard": "📊",
+        "Sponsors": "👥",
+        "Students": "🎓",
+        "Messages": "✉️",
+        "Reports": "📁",
+        "Schedule": "🗓️",
+    }
+
     core_sel = st.radio(
         "core_nav",
         core_pages,
         label_visibility="collapsed",
         key="core_radio",
+        format_func=lambda p: f"{core_icon_map.get(p, '•')}  {p}",
     )
 
     st.markdown('<div style="margin-top:0.5rem"></div>', unsafe_allow_html=True)
@@ -535,11 +664,18 @@ with st.sidebar:
     st.markdown('<div class="sidebar-section-label">INTELLIGENCE</div>', unsafe_allow_html=True)
     intel_pages = ["AI Intelligence", "Style Library", "Message History"]
 
+    intel_icon_map = {
+        "AI Intelligence": "🧠",
+        "Style Library": "🎨",
+        "Message History": "🕘",
+    }
+
     intel_sel = st.radio(
         "intel_nav",
         intel_pages,
         label_visibility="collapsed",
         key="intel_radio",
+        format_func=lambda p: f"{intel_icon_map.get(p, '•')}  {p}",
     )
 
     # Determine active page: whichever radio was last interacted with
@@ -564,6 +700,11 @@ with st.sidebar:
         HOPe Sponsor Assistant
     </div>
     ''', unsafe_allow_html=True)
+    st.markdown('<div style="padding-top:0.4rem"></div>', unsafe_allow_html=True)
+    if st.button("↩ Logout", type="secondary", use_container_width=True):
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        st.rerun()
 
 
 # ============================================
@@ -627,16 +768,26 @@ if page == "Dashboard":
             status  = str(row.get("Status", ""))
             badge_cls = "badge-success" if status.lower() == "sent" else "badge-warning"
             ch_badge  = "badge-purple" if "email" in channel.lower() else "badge-warning"
+            recipient_raw = str(row.get("Recipient", "") or "").strip()
+            recipient = safe_text(recipient_raw or "—")
+            date_txt = safe_text(row.get("Date", ""))
+            msg_raw = str(row.get("Message", "") or "").strip()
+            msg_excerpt = safe_text((msg_raw[:96] + "…") if len(msg_raw) > 96 else (msg_raw or "No message body"))
+            avatar = safe_text(recipient_raw[:1].upper() if recipient_raw else "?")
 
             st.markdown(f'''
             <div class="activity-row">
-                <div>
-                    <div class="activity-name">{row.get("Recipient", "—")}</div>
-                    <div class="activity-meta">{row.get("Date", "")} · {channel}</div>
+                <div class="activity-left">
+                    <div class="activity-avatar">{avatar}</div>
+                    <div>
+                        <div class="activity-name">{recipient}</div>
+                        <div class="activity-excerpt">{msg_excerpt}</div>
+                        <div class="activity-meta">{date_txt}</div>
+                    </div>
                 </div>
                 <div style="display:flex;gap:0.5rem;align-items:center;">
-                    <span class="badge {ch_badge}">{channel}</span>
-                    <span class="badge {badge_cls}">{status}</span>
+                    <span class="badge {ch_badge}">{safe_text(channel)}</span>
+                    <span class="badge {badge_cls}">{safe_text(status)}</span>
                 </div>
             </div>
             ''', unsafe_allow_html=True)
@@ -711,10 +862,21 @@ elif page == "Sponsors":
         df = df[mask]
 
     if not df.empty:
-        st.markdown('<div class="hope-card">', unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:0.8rem;color:#64748B;margin-bottom:0.75rem;">{len(df)} sponsor{"s" if len(df)!=1 else ""} found</div>', unsafe_allow_html=True)
-        st.dataframe(df, use_container_width=True, hide_index=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        sponsors_view = df.copy()
+        sponsors_view["Sponsor"] = sponsors_view.get("Name", "")
+        sponsors_view["Contact"] = sponsors_view.apply(
+            lambda r: r.get("Email") or r.get("WhatsApp") or "—",
+            axis=1
+        )
+        sponsors_view["Notes"] = sponsors_view.get("Notes", "")
+        sponsors_view["Actions"] = "Edit / Delete"
+        render_table_container(
+            sponsors_view,
+            columns=["Sponsor", "Contact", "Notes", "Actions"],
+            headers=["Sponsor", "Contact", "Notes", "Actions"],
+            row_label=f'sponsor{"s" if len(df) != 1 else ""}',
+            search_text=search_q
+        )
 
         st.markdown('<div class="section-subheader">Edit or Remove Sponsor</div>', unsafe_allow_html=True)
         selected_name = st.selectbox("Select sponsor", df["Name"].tolist(), key="sel_sponsor")
@@ -823,10 +985,18 @@ elif page == "Students":
         df = df[mask]
 
     if not df.empty:
-        st.markdown('<div class="hope-card">', unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:0.8rem;color:#64748B;margin-bottom:0.75rem;">{len(df)} student{"s" if len(df)!=1 else ""} found</div>', unsafe_allow_html=True)
-        st.dataframe(df, use_container_width=True, hide_index=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        students_view = df.copy()
+        students_view["Student"] = students_view.get("name", "")
+        students_view["Contact"] = students_view.get("contact_info", "")
+        students_view["Notes"] = students_view.get("notes", "")
+        students_view["Actions"] = "Edit / Delete"
+        render_table_container(
+            students_view,
+            columns=["Student", "Contact", "Notes", "Actions"],
+            headers=["Student", "Contact", "Notes", "Actions"],
+            row_label=f'student{"s" if len(df) != 1 else ""}',
+            search_text=student_search
+        )
 
         st.markdown('<div class="section-subheader">Edit or Remove Student</div>', unsafe_allow_html=True)
         selected_code = st.selectbox("Select student", df["student_code"].tolist(), key="sel_student")
@@ -938,7 +1108,7 @@ elif page == "Messages":
 elif page == "AI Intelligence":
     st.markdown('''
     <div class="fade-in">
-        <div class="page-title">AI <span class="accent">Intelligence</span></div>
+        <div class="page-title">AI Intelligence</div>
         <div class="page-subtitle">Generate sponsor messages and get AI-powered assistance</div>
     </div>
     ''', unsafe_allow_html=True)
@@ -963,13 +1133,16 @@ elif page == "AI Intelligence":
             # Style reference chips
             styles_df = styles_to_dataframe()
             if not styles_df.empty:
-                st.markdown('<div class="section-subheader" style="margin-top:1rem">Style References</div>', unsafe_allow_html=True)
-                st.markdown('<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem;">', unsafe_allow_html=True)
+                st.markdown('<div class="section-subheader" style="margin-top:1rem">Reference Styles (Optional)</div>', unsafe_allow_html=True)
                 for _, srow in styles_df.head(6).iterrows():
-                    cat = str(srow.get("Category", ""))
+                    cat = safe_text(srow.get("Category", ""))
                     gold = "⭐ " if srow.get("Golden") else ""
-                    st.markdown(f'<span class="badge badge-purple">{gold}{cat}</span>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                    msg = str(srow.get("Message", "") or "").strip()
+                    msg_excerpt = safe_text((msg[:88] + "…") if len(msg) > 88 else (msg or "Style example"))
+                    st.markdown(
+                        f'<div class="ref-style-card"><div class="ref-style-title">{gold}{cat}</div><div class="ref-style-text">{msg_excerpt}</div></div>',
+                        unsafe_allow_html=True
+                    )
 
             gen_btn = st.button("✨ Generate Draft", type="primary", use_container_width=True)
 
