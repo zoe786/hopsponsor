@@ -2,5 +2,18 @@ sponsor_assistant.db
 __pycache__/
 *.pyc
 .env
+.env.local
 venv/
 reports/
+
+# Next.js
+.next/
+out/
+node_modules/
+data/
+
+# DB files
+*.db
+
+# OS
+.DS_Store
