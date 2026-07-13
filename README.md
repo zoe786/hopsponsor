@@ -7,9 +7,11 @@ A **Next.js** sponsor relationship management and student support dashboard, dep
 - 👥 **Sponsor Management** — Add, edit, delete, and search sponsors; CSV export
 - 🎓 **Student Management** — Track students with grade/sponsor assignments; CSV export
 - ✉️ **Messaging** — Send emails (via Resend) and WhatsApp (via Twilio) with built-in message templates
-- 📁 **Reports** — Upload student reports with AI-powered file-to-student matching
+- 📁 **Reports** — Upload student reports with AI-powered file-to-student matching and sent-status tracking
 - 🗓️ **Scheduling** — Schedule messages for future delivery with a background worker
-- 🧠 **AI Intelligence** — Generate message drafts in your style + an AI chat assistant
+- 💳 **Payment Commitments** — Track sponsor commitments, due dates, and received amounts
+- 📅 **Calendar Sync** — Manage calendar events and subscribe to an ICS feed from Google Calendar, Apple Calendar, Outlook, and more
+- 🧠 **AI Intelligence** — Generate message drafts in your style + an AI chat assistant that can also schedule messages and create tracking records
 - 🎨 **Style Library** — Store writing examples to guide the AI
 - 📜 **Message History** — Full log of all outbound communications
 - 📊 **Analytics Dashboard** — Live stats and 30-day message activity chart
@@ -42,7 +44,7 @@ npm install
 cp .env.example .env.local
 ```
 
-Fill in your API keys in `.env.local`:
+Fill in the API keys in `.env.local` only when you are ready to use those features:
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -60,6 +62,8 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+Without API keys, sponsor/student storage, reports, payment tracking, calendar events, and the ICS calendar feed still work. Add the OpenAI, Resend, and Twilio keys later when you want AI or outbound messaging.
 
 ### 4. Build for production
 
@@ -110,6 +114,10 @@ By default, this app uses a local SQLite file at `./data/sponsor_assistant.db`. 
 5. **File matching** — Returns ordered array of `{fileName, studentName}` objects (safe to iterate in sync with files)
 6. **Chat XSS** — User messages are rendered as text, not raw HTML
 7. **Student code generation** — Handles non-standard codes gracefully
+
+## Calendar Sync
+
+HOPe exposes an **ICS calendar feed** at `/api/calendar/feed`. Once the app is deployed, copy that URL into Google Calendar (Add calendar → From URL), Apple Calendar, Outlook, or any other app that supports iCalendar subscriptions. The feed includes manual calendar events and pending scheduled messages.
 
 ## Environment Variables Reference
 
