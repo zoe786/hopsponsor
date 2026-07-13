@@ -17,6 +17,7 @@ from database import (
     get_sponsor,
     add_report,
     get_reports,
+    reports_to_dataframe,
     update_report_sent,
     get_students_by_name_fragment,
     update_sponsor,
@@ -669,7 +670,7 @@ elif page == "Sponsors":
     # Search
     search_col, _ = st.columns([2, 3])
     with search_col:
-        search_q = st.text_input("🔍 Search sponsors…", key="sponsor_search", label_visibility="collapsed",
+        search_q = st.text_input("Search sponsors", key="sponsor_search", label_visibility="visible",
                                  placeholder="Search by name or company…")
 
     # Add sponsor form
@@ -768,7 +769,7 @@ elif page == "Students":
     # Search
     search_col, _ = st.columns([2, 3])
     with search_col:
-        student_search = st.text_input("🔍", key="student_search", label_visibility="collapsed",
+        student_search = st.text_input("Search students", key="student_search", label_visibility="visible",
                                        placeholder="Search students…")
 
     grades_df   = get_grades()
@@ -1156,7 +1157,7 @@ elif page == "Reports":
                 st.rerun()
 
     st.markdown('<div class="section-subheader">All Reports</div>', unsafe_allow_html=True)
-    reports_df = get_reports()
+    reports_df = reports_to_dataframe()
     if not reports_df.empty:
         st.markdown('<div class="hope-card">', unsafe_allow_html=True)
         st.dataframe(reports_df, use_container_width=True, hide_index=True)
