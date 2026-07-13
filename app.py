@@ -42,6 +42,9 @@ import pandas as pd
 import html
 
 BRAND_ICON = "✦"
+EMPTY_DISPLAY = "—"
+MAX_ACTIVITY_MESSAGE_LENGTH = 96
+MAX_STYLE_MESSAGE_LENGTH = 88
 
 # Ensure data folders exist
 os.makedirs("data", exist_ok=True)
@@ -570,10 +573,10 @@ st.markdown("""
 def safe_text(value):
     """Return UI-safe text by normalizing empty values and escaping HTML."""
     if value is None:
-        return "—"
+        return html.escape(EMPTY_DISPLAY)
     text = str(value).strip()
     if not text or text.lower() == "nan":
-        return "—"
+        return html.escape(EMPTY_DISPLAY)
     return html.escape(text)
 
 
@@ -584,21 +587,28 @@ def render_table_container(df, columns, headers, row_label, search_text, grid_te
         f'<div class="table-search-row"><span>{len(df)} {row_label} found</span><span>Search: {safe_text(search_text) if search_text else "All"}</span></div>',
         unsafe_allow_html=True
     )
-    grid = grid_template or " ".join(["1fr"] * max(len(columns), 1))
+    grid = grid_template or " ".join(["1fr"] * max(len(headers), 1))
     st.markdown(
         f'<div class="table-header-row" style="grid-template-columns:{grid};">' +
         "".join(f"<div>{safe_text(h)}</div>" for h in headers) +
         '</div>',
         unsafe_allow_html=True
     )
-    for _, row in df.iterrows():
+    for row in df[columns].to_dict("records"):
         st.markdown(
             f'<div class="table-row" style="grid-template-columns:{grid};">' +
-            "".join(f"<div>{safe_text(row.get(col, '—'))}</div>" for col in columns) +
+            "".join(f"<div>{safe_text(row.get(col, EMPTY_DISPLAY))}</div>" for col in columns) +
             '</div>',
             unsafe_allow_html=True
         )
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+def merge_contact_info(df, primary_col, fallback_col):
+    """Build a display contact field by preferring a primary column over fallback."""
+    primary = df[primary_col] if primary_col in df.columns else pd.Series("", index=df.index)
+    fallback = df[fallback_col] if fallback_col in df.columns else pd.Series("", index=df.index)
+    return primary.replace("", pd.NA).fillna(fallback.replace("", pd.NA)).fillna(EMPTY_DISPLAY)
 
 
 # ============================================
@@ -775,7 +785,11 @@ if page == "Dashboard":
             recipient = safe_text(recipient_raw or "—")
             date_txt = safe_text(row.get("Date", ""))
             msg_raw = str(row.get("Message", "") or "").strip()
-            msg_excerpt = safe_text((msg_raw[:96] + "…") if len(msg_raw) > 96 else (msg_raw or "No message body"))
+            msg_excerpt = safe_text(
+                (msg_raw[:MAX_ACTIVITY_MESSAGE_LENGTH] + "…")
+                if len(msg_raw) > MAX_ACTIVITY_MESSAGE_LENGTH
+                else (msg_raw or "No message body")
+            )
             avatar = safe_text(recipient_raw[:1].upper() if recipient_raw else "?")
 
             st.markdown(f'''
@@ -867,9 +881,7 @@ elif page == "Sponsors":
     if not df.empty:
         sponsors_view = df.copy()
         sponsors_view["Sponsor"] = sponsors_view.get("Name", "")
-        email_series = sponsors_view["Email"] if "Email" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
-        whatsapp_series = sponsors_view["WhatsApp"] if "WhatsApp" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
-        sponsors_view["Contact"] = email_series.replace("", pd.NA).fillna(whatsapp_series.replace("", pd.NA)).fillna("—")
+        sponsors_view["Contact"] = merge_contact_info(sponsors_view, "Email", "WhatsApp")
         sponsors_view["Notes"] = sponsors_view.get("Notes", "")
         sponsors_view["Actions"] = "Manage below"
         render_table_container(
@@ -1142,7 +1154,11 @@ elif page == "AI Intelligence":
                     cat = safe_text(srow.get("Category", ""))
                     gold = "⭐ " if srow.get("Golden") else ""
                     msg = str(srow.get("Message", "") or "").strip()
-                    msg_excerpt = safe_text((msg[:88] + "…") if len(msg) > 88 else (msg or "Style example"))
+                    msg_excerpt = safe_text(
+                        (msg[:MAX_STYLE_MESSAGE_LENGTH] + "…")
+                        if len(msg) > MAX_STYLE_MESSAGE_LENGTH
+                        else (msg or "Style example")
+                    )
                     st.markdown(
                         f'<div class="ref-style-card"><div class="ref-style-title">{gold}{cat}</div><div class="ref-style-text">{msg_excerpt}</div></div>',
                         unsafe_allow_html=True
