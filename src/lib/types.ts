@@ -54,7 +54,10 @@ export interface MessageRecord {
 export interface ScheduledMessage {
   id: number;
   recipient: string;
+  recipient_id: number | null;
+  recipient_name?: string;
   channel: string;
+  subject: string;
   message: string;
   send_time: string;
   status: string;
@@ -63,11 +66,43 @@ export interface ScheduledMessage {
 export interface Report {
   id: number;
   student_id: number;
+  student_name?: string;
   file_path: string;
   file_name: string;
   upload_date: string;
   message_sent: number; // 0 or 1
   sent_to: string | null;
+}
+
+export interface PaymentCommitment {
+  id: number;
+  sponsor_id: number;
+  sponsor_name?: string;
+  student_id: number | null;
+  student_name?: string;
+  amount_committed: number;
+  amount_received: number;
+  currency: string;
+  frequency: string;
+  commitment_date: string;
+  next_due_date: string | null;
+  last_payment_date: string | null;
+  status: string;
+  notes: string;
+}
+
+export interface CalendarEvent {
+  id: number;
+  title: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  sponsor_id: number | null;
+  sponsor_name?: string;
+  student_id: number | null;
+  student_name?: string;
+  source: string;
 }
 
 // ============================================

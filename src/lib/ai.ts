@@ -12,8 +12,6 @@ import { Resend } from "resend";
 import twilio from "twilio";
 import type { ChatMessage } from "./types";
 
-// ── Clients ───────────────────────────────────────────────────────────────────
-
 function getOpenAI(): OpenAI {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
@@ -23,13 +21,8 @@ function getResend(): Resend {
 }
 
 function getTwilio() {
-  return twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-  );
+  return twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
-
-// ── Message generation ────────────────────────────────────────────────────────
 
 export async function generateMessage(
   userPrompt: string,
@@ -59,14 +52,9 @@ Write a message draft.`;
   return response.choices[0].message.content ?? "";
 }
 
-// ── Image description ─────────────────────────────────────────────────────────
-
 export async function describeImage(imageData: Buffer | string): Promise<string> {
   const openai = getOpenAI();
-  const base64Image =
-    typeof imageData === "string"
-      ? imageData
-      : imageData.toString("base64");
+  const base64Image = typeof imageData === "string" ? imageData : imageData.toString("base64");
 
   try {
     const response = await openai.chat.completions.create({
@@ -94,8 +82,6 @@ export async function describeImage(imageData: Buffer | string): Promise<string>
     return `Error describing image: ${msg}`;
   }
 }
-
-// ── Email ─────────────────────────────────────────────────────────────────────
 
 export async function sendEmail(
   to: string,
@@ -151,16 +137,13 @@ export async function sendEmailWithAttachment(
   }
 }
 
-// ── WhatsApp ──────────────────────────────────────────────────────────────────
-
 export async function sendWhatsApp(
   to: string,
   body: string
 ): Promise<{ success: boolean; sid?: string; error?: string }> {
   try {
     const client = getTwilio();
-    const from =
-      process.env.TWILIO_WHATSAPP_FROM ?? "+14155238886";
+    const from = process.env.TWILIO_WHATSAPP_FROM ?? "+14155238886";
     const message = await client.messages.create({
       body,
       from: `whatsapp:${from}`,
@@ -175,15 +158,13 @@ export async function sendWhatsApp(
   }
 }
 
-// ── Chat assistant tools ───────────────────────────────────────────────────────
-
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
       name: "query_database",
       description:
-        "Run a SELECT SQL query on the sponsors, style_library, students, or message_history tables.",
+        "Run a SELECT SQL query on the sponsors, style_library, students, message_history, scheduled_messages, payment_commitments, or calendar_events tables.",
       parameters: {
         type: "object",
         properties: {
@@ -200,8 +181,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "draft_message",
-      description:
-        "Generate a draft message for sponsors using the user's writing style.",
+      description: "Generate a draft message for sponsors using the user's writing style.",
       parameters: {
         type: "object",
         properties: {
@@ -222,15 +202,78 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "schedule_message",
+      description: "Schedule a sponsor email or WhatsApp message for later delivery.",
+      parameters: {
+        type: "object",
+        properties: {
+          sponsor_name: { type: "string", description: "Sponsor name." },
+          channel: { type: "string", description: "Email or WhatsApp." },
+          subject: { type: "string", description: "Email subject if channel is Email." },
+          message: { type: "string", description: "Message body to send." },
+          send_time: {
+            type: "string",
+            description: "ISO datetime when the message should be sent.",
+          },
+        },
+        required: ["sponsor_name", "channel", "message", "send_time"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_payment_commitment",
+      description: "Create a payment commitment tracker entry for a sponsor.",
+      parameters: {
+        type: "object",
+        properties: {
+          sponsor_name: { type: "string", description: "Sponsor name." },
+          student_name: { type: "string", description: "Optional student name." },
+          amount_committed: { type: "number", description: "Committed amount." },
+          amount_received: { type: "number", description: "Amount already received." },
+          currency: { type: "string", description: "Currency code such as USD." },
+          frequency: { type: "string", description: "Monthly, quarterly, yearly, one-time, etc." },
+          commitment_date: { type: "string", description: "Start or commitment date in YYYY-MM-DD format." },
+          next_due_date: { type: "string", description: "Optional next due date in YYYY-MM-DD format." },
+          last_payment_date: { type: "string", description: "Optional last payment date in YYYY-MM-DD format." },
+          status: { type: "string", description: "active, paused, completed, overdue, etc." },
+          notes: { type: "string", description: "Optional notes." },
+        },
+        required: ["sponsor_name", "amount_committed", "frequency", "commitment_date"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_calendar_event",
+      description: "Create a calendar event for sponsor or student follow-up.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Event title." },
+          description: { type: "string", description: "Event details." },
+          start_time: { type: "string", description: "ISO event start datetime." },
+          end_time: { type: "string", description: "Optional ISO event end datetime." },
+          location: { type: "string", description: "Optional location." },
+          sponsor_name: { type: "string", description: "Optional sponsor name." },
+          student_name: { type: "string", description: "Optional student name." },
+        },
+        required: ["title", "start_time"],
+      },
+    },
+  },
 ];
 
 function queryDatabase(sql: string): string {
   try {
-    // Import db lazily to avoid circular deps and to keep this file edge-friendly
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getDb } = require("./db") as typeof import("./db");
     const db = getDb();
-    // Safety: only allow SELECT statements
     if (!/^\s*SELECT\b/i.test(sql)) {
       return "Error: only SELECT queries are allowed.";
     }
@@ -250,7 +293,127 @@ async function draftMessageTool(
   return generateMessage(request, styleExamples, imageDescription);
 }
 
-// ── Chat assistant ────────────────────────────────────────────────────────────
+function scheduleMessageTool(args: Record<string, string>): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getDb, addScheduledMessage } = require("./db") as typeof import("./db");
+    const db = getDb();
+    const sponsor = db
+      .prepare("SELECT id, name FROM sponsors WHERE lower(name) = lower(?) OR name LIKE ? ORDER BY name LIMIT 1")
+      .get(args.sponsor_name, `%${args.sponsor_name}%`) as { id: number; name: string } | undefined;
+
+    if (!sponsor) return `Error: sponsor '${args.sponsor_name}' was not found.`;
+
+    const sendTime = new Date(args.send_time);
+    if (Number.isNaN(sendTime.getTime())) return "Error: send_time must be a valid ISO datetime.";
+    if (sendTime.getTime() <= Date.now()) return "Error: send_time must be in the future.";
+
+    const id = addScheduledMessage(
+      sponsor.id,
+      sponsor.name,
+      args.channel,
+      args.subject ?? "",
+      args.message,
+      sendTime.toISOString()
+    );
+    return `Scheduled ${args.channel} for ${sponsor.name} with ID ${id} at ${sendTime.toISOString()}.`;
+  } catch (err) {
+    return `Error scheduling message: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+function createPaymentCommitmentTool(args: Record<string, string>): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getDb, addPaymentCommitment } = require("./db") as typeof import("./db");
+    const db = getDb();
+    const sponsor = db
+      .prepare("SELECT id, name FROM sponsors WHERE lower(name) = lower(?) OR name LIKE ? ORDER BY name LIMIT 1")
+      .get(args.sponsor_name, `%${args.sponsor_name}%`) as { id: number; name: string } | undefined;
+
+    if (!sponsor) return `Error: sponsor '${args.sponsor_name}' was not found.`;
+
+    let studentId: number | null = null;
+    let studentLabel = "";
+    if (args.student_name) {
+      const student = db
+        .prepare("SELECT id, name FROM students WHERE lower(name) = lower(?) OR name LIKE ? ORDER BY name LIMIT 1")
+        .get(args.student_name, `%${args.student_name}%`) as { id: number; name: string } | undefined;
+      if (!student) return `Error: student '${args.student_name}' was not found.`;
+      studentId = student.id;
+      studentLabel = ` for ${student.name}`;
+    }
+
+    const id = addPaymentCommitment(
+      sponsor.id,
+      studentId,
+      Number(args.amount_committed),
+      Number(args.amount_received ?? 0),
+      args.currency ?? "USD",
+      args.frequency,
+      args.commitment_date,
+      args.next_due_date ?? null,
+      args.last_payment_date ?? null,
+      args.status ?? "active",
+      args.notes ?? ""
+    );
+
+    return `Created payment commitment ${id} for ${sponsor.name}${studentLabel}.`;
+  } catch (err) {
+    return `Error creating payment commitment: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+function createCalendarEventTool(args: Record<string, string>): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getDb, addCalendarEvent } = require("./db") as typeof import("./db");
+    const db = getDb();
+
+    const startTime = new Date(args.start_time);
+    if (Number.isNaN(startTime.getTime())) return "Error: start_time must be a valid ISO datetime.";
+
+    let endIso: string | null = null;
+    if (args.end_time) {
+      const endTime = new Date(args.end_time);
+      if (Number.isNaN(endTime.getTime())) return "Error: end_time must be a valid ISO datetime.";
+      endIso = endTime.toISOString();
+    }
+
+    let sponsorId: number | null = null;
+    if (args.sponsor_name) {
+      const sponsor = db
+        .prepare("SELECT id FROM sponsors WHERE lower(name) = lower(?) OR name LIKE ? ORDER BY name LIMIT 1")
+        .get(args.sponsor_name, `%${args.sponsor_name}%`) as { id: number } | undefined;
+      if (!sponsor) return `Error: sponsor '${args.sponsor_name}' was not found.`;
+      sponsorId = sponsor.id;
+    }
+
+    let studentId: number | null = null;
+    if (args.student_name) {
+      const student = db
+        .prepare("SELECT id FROM students WHERE lower(name) = lower(?) OR name LIKE ? ORDER BY name LIMIT 1")
+        .get(args.student_name, `%${args.student_name}%`) as { id: number } | undefined;
+      if (!student) return `Error: student '${args.student_name}' was not found.`;
+      studentId = student.id;
+    }
+
+    const id = addCalendarEvent(
+      args.title,
+      args.description ?? "",
+      startTime.toISOString(),
+      endIso,
+      args.location ?? "",
+      sponsorId,
+      studentId,
+      "ai"
+    );
+
+    return `Created calendar event ${id} titled '${args.title}'.`;
+  } catch (err) {
+    return `Error creating calendar event: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
 
 export async function chatAssistant(
   messages: ChatMessage[],
@@ -273,6 +436,9 @@ export async function chatAssistant(
 You have access to the following tools:
 1. query_database: retrieve information from the SQLite database.
 2. draft_message: write a message draft in the user's style.
+3. schedule_message: schedule a future sponsor message.
+4. create_payment_commitment: create or track sponsor payment commitments.
+5. create_calendar_event: create follow-up or event reminders.
 
 The user's writing style examples:
 ${styleExamples}
@@ -289,7 +455,6 @@ Use the tools when needed. Be conversational and helpful.`;
     })),
   ];
 
-  // Agentic loop
   for (let i = 0; i < 10; i++) {
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -307,10 +472,7 @@ Use the tools when needed. Be conversational and helpful.`;
     }
 
     for (const toolCall of assistantMsg.tool_calls) {
-      const args = JSON.parse(toolCall.function.arguments) as Record<
-        string,
-        string
-      >;
+      const args = JSON.parse(toolCall.function.arguments) as Record<string, string>;
       let result: string;
 
       if (toolCall.function.name === "query_database") {
@@ -321,6 +483,12 @@ Use the tools when needed. Be conversational and helpful.`;
           args.style_examples,
           args.image_description
         );
+      } else if (toolCall.function.name === "schedule_message") {
+        result = scheduleMessageTool(args);
+      } else if (toolCall.function.name === "create_payment_commitment") {
+        result = createPaymentCommitmentTool(args);
+      } else if (toolCall.function.name === "create_calendar_event") {
+        result = createCalendarEventTool(args);
       } else {
         result = "Unknown function.";
       }
@@ -336,12 +504,6 @@ Use the tools when needed. Be conversational and helpful.`;
   return "I couldn't process your request.";
 }
 
-// ── AI file-to-student matching ───────────────────────────────────────────────
-
-/**
- * BUG FIX: returns an array of {fileName, studentName} objects (ordered),
- * instead of a plain dict (unordered), so zip-iteration is safe.
- */
 export async function matchFilesToStudents(
   fileNames: string[],
   studentNames: string[]
@@ -350,11 +512,12 @@ export async function matchFilesToStudents(
   const prompt = `Given the list of student names: ${studentNames.join(", ")}
 and these file names (without extension): ${fileNames.join(", ")}
 
-Return a JSON array where each element has "fileName" and "studentName" keys.
+Return a JSON object with a single key called matches.
+Each match should have "fileName" and "studentName" keys.
 Map each file name to the most likely student name, or null if no match.
-Only output the JSON array, nothing else.
+Only output JSON.
 Example:
-[{"fileName":"Areeb_Report","studentName":"Areeb"},{"fileName":"Unknown","studentName":null}]`;
+{"matches":[{"fileName":"Areeb_Report","studentName":"Areeb"},{"fileName":"Unknown","studentName":null}]}`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -364,13 +527,11 @@ Example:
       response_format: { type: "json_object" },
     });
     const raw = JSON.parse(response.choices[0].message.content ?? "{}");
-    // Handle both array response and {matches:[...]} response
     const arr: { fileName: string; studentName: string | null }[] = Array.isArray(raw)
       ? raw
       : (raw.matches ?? raw.results ?? []);
     return arr;
   } catch {
-    // Fallback: return unmatched
     return fileNames.map((f) => ({ fileName: f, studentName: null }));
   }
 }
