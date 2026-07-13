@@ -45,6 +45,8 @@ BRAND_ICON = "✦"
 EMPTY_DISPLAY = "—"
 MAX_ACTIVITY_MESSAGE_LENGTH = 96
 MAX_STYLE_MESSAGE_LENGTH = 88
+ACTION_GUIDANCE = "Manage below"
+DEFAULT_AVATAR = "?"
 CORE_ICON_MAP = {
     "Dashboard": "📊",
     "Sponsors": "👥",
@@ -600,7 +602,7 @@ def render_table_container(df, columns, headers, row_label, search_text, grid_te
         f'<div class="table-search-row"><span>{len(df)} {row_label} found</span><span>Search: {safe_text(search_text) if search_text else "All"}</span></div>',
         unsafe_allow_html=True
     )
-    grid = grid_template or " ".join(["1fr"] * max(len(headers), 1))
+    grid = grid_template or " ".join(["1fr"] * max(len(columns), 1))
     st.markdown(
         f'<div class="table-header-row" style="grid-template-columns:{grid};">' +
         "".join(f"<div>{safe_text(h)}</div>" for h in headers) +
@@ -624,6 +626,11 @@ def merge_contact_info(df, primary_col, fallback_col):
     primary = primary.replace("", pd.NA)
     fallback = fallback.replace("", pd.NA)
     return primary.mask(primary.isna(), fallback).fillna(EMPTY_DISPLAY)
+
+
+def get_column_or_empty(df, column_name):
+    """Return a dataframe column or an empty series with matching index."""
+    return df[column_name] if column_name in df.columns else pd.Series("", index=df.index)
 
 
 def truncate_message(text, max_length, default_text):
@@ -795,7 +802,7 @@ if page == "Dashboard":
             msg_excerpt = safe_text(
                 truncate_message(row.get("Message", ""), MAX_ACTIVITY_MESSAGE_LENGTH, "No message body")
             )
-            avatar = safe_text(recipient_raw[:1].upper() if recipient_raw else "?")
+            avatar = safe_text(recipient_raw[:1].upper() if recipient_raw else DEFAULT_AVATAR)
 
             st.markdown(f'''
             <div class="activity-row">
@@ -885,10 +892,10 @@ elif page == "Sponsors":
 
     if not df.empty:
         sponsors_view = df.copy()
-        sponsors_view["Sponsor"] = sponsors_view["Name"] if "Name" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
+        sponsors_view["Sponsor"] = get_column_or_empty(sponsors_view, "Name")
         sponsors_view["Contact"] = merge_contact_info(sponsors_view, "Email", "WhatsApp")
-        sponsors_view["Notes"] = sponsors_view["Notes"] if "Notes" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
-        sponsors_view["Actions"] = "Manage below"
+        sponsors_view["Notes"] = get_column_or_empty(sponsors_view, "Notes")
+        sponsors_view["Actions"] = ACTION_GUIDANCE
         render_table_container(
             sponsors_view,
             columns=["Sponsor", "Contact", "Notes", "Actions"],
@@ -1006,10 +1013,10 @@ elif page == "Students":
 
     if not df.empty:
         students_view = df.copy()
-        students_view["Student"] = students_view["name"] if "name" in students_view.columns else pd.Series("", index=students_view.index)
-        students_view["Contact"] = students_view["contact_info"] if "contact_info" in students_view.columns else pd.Series("", index=students_view.index)
-        students_view["Notes"] = students_view["notes"] if "notes" in students_view.columns else pd.Series("", index=students_view.index)
-        students_view["Actions"] = "Manage below"
+        students_view["Student"] = get_column_or_empty(students_view, "name")
+        students_view["Contact"] = get_column_or_empty(students_view, "contact_info")
+        students_view["Notes"] = get_column_or_empty(students_view, "notes")
+        students_view["Actions"] = ACTION_GUIDANCE
         render_table_container(
             students_view,
             columns=["Student", "Contact", "Notes", "Actions"],
