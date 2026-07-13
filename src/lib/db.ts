@@ -43,6 +43,20 @@ export function getDb(): Database.Database {
 }
 
 function hasColumn(db: Database.Database, table: string, column: string): boolean {
+  const allowedTables = new Set([
+    "scheduled_messages",
+    "sponsors",
+    "style_library",
+    "message_history",
+    "grades",
+    "students",
+    "reports",
+    "payment_commitments",
+    "calendar_events",
+  ]);
+  if (!allowedTables.has(table)) {
+    throw new Error(`Unsupported table for schema inspection: ${table}`);
+  }
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   return columns.some((entry) => entry.name === column);
 }

@@ -59,7 +59,7 @@ export default function CalendarPage() {
       location: form.location,
       sponsor_id: form.sponsor_id ? Number(form.sponsor_id) : null,
       student_id: form.student_id ? Number(form.student_id) : null,
-      source: editingId ? "manual" : "manual",
+      source: "manual",
     };
     const res = await fetch(editingId ? `/api/calendar-events/${editingId}` : "/api/calendar-events", {
       method: editingId ? "PUT" : "POST",
