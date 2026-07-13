@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateScheduledMessageStatus, getDueScheduledMessages, getScheduledMessages } from "@/lib/db";
+import { updateScheduledMessageStatus } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -26,7 +26,3 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }
-
-// Suppress unused import warning
-void getDueScheduledMessages;
-void getScheduledMessages;

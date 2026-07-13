@@ -13,10 +13,13 @@ export default function SchedulePage() {
   const [sending, setSending]   = useState(false);
   const [loading, setLoading]   = useState(true);
 
-  // Form state
-  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-  const blank = { recipient: "", channel: "Email", message: "", send_date: tomorrow.toISOString().split("T")[0], send_time: "09:00" };
-  const [form, setForm] = useState(blank);
+  // Form state — initialise once
+  const getDefaultForm = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return { recipient: "", channel: "Email", message: "", send_date: tomorrow.toISOString().split("T")[0], send_time: "09:00" };
+  };
+  const [form, setForm] = useState(getDefaultForm);
   const setF = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const load = useCallback(async () => {
@@ -39,7 +42,7 @@ export default function SchedulePage() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ recipient: form.recipient, channel: form.channel, message: form.message, send_time: sendTime }),
     }).then((r) => r.json());
-    if (res.success) { toast.success("✅ Scheduled!"); setShowForm(false); setForm(blank); load(); }
+    if (res.success) { toast.success("✅ Scheduled!"); setShowForm(false); setForm(getDefaultForm()); load(); }
     else toast.error(res.error ?? "Failed");
   };
 

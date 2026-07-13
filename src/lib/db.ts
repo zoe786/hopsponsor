@@ -242,24 +242,30 @@ export function addMessage(
 }
 
 export function getMessages(limit?: number): MessageRecord[] {
-  const query = limit
-    ? `SELECT * FROM message_history ORDER BY id DESC LIMIT ${limit}`
-    : "SELECT * FROM message_history ORDER BY id DESC";
-  return getDb().prepare(query).all() as MessageRecord[];
+  if (limit !== undefined) {
+    return getDb()
+      .prepare("SELECT * FROM message_history ORDER BY id DESC LIMIT ?")
+      .all(limit) as MessageRecord[];
+  }
+  return getDb()
+    .prepare("SELECT * FROM message_history ORDER BY id DESC")
+    .all() as MessageRecord[];
 }
 
 export function getMessagesByDay(
   days = 30
 ): { date: string; count: number }[] {
+  // days is a number (not user input); validated to safe range before use
+  const safeDays = Math.min(Math.max(Math.floor(days), 1), 365);
   return getDb()
     .prepare(
       `SELECT date, COUNT(*) as count
        FROM message_history
-       WHERE date >= date('now', '-${days} days')
+       WHERE date >= date('now', ? || ' days')
        GROUP BY date
        ORDER BY date ASC`
     )
-    .all() as { date: string; count: number }[];
+    .all(`-${safeDays}`) as { date: string; count: number }[];
 }
 
 // ── Scheduled Messages ────────────────────────────────────────────────────────
