@@ -58,7 +58,7 @@ CORE_ICON_MAP = {
 INTEL_ICON_MAP = {
     "AI Intelligence": "🧠",
     "Style Library": "🎨",
-    "Message History": "🕘",
+    "Message History": "📜",
 }
 
 # Ensure data folders exist
@@ -597,6 +597,9 @@ def safe_text(value):
 
 def render_table_container(df, columns, headers, row_label, search_text, grid_template=None):
     """Render a reusable dark table container with search context and rows."""
+    if not columns:
+        st.info("No columns available for table view.")
+        return
     st.markdown('<div class="table-container fade-in">', unsafe_allow_html=True)
     st.markdown(
         f'<div class="table-search-row"><span>{len(df)} {row_label} found</span><span>Search: {safe_text(search_text) if search_text else "All"}</span></div>',
@@ -604,14 +607,14 @@ def render_table_container(df, columns, headers, row_label, search_text, grid_te
     )
     grid = grid_template or " ".join(["1fr"] * max(len(columns), 1))
     st.markdown(
-        f'<div class="table-header-row" style="grid-template-columns:{grid};">' +
+        f'<div class="table-header-row" style="grid-template-columns: {grid};">' +
         "".join(f"<div>{safe_text(h)}</div>" for h in headers) +
         '</div>',
         unsafe_allow_html=True
     )
     for row in df[columns].to_dict("records"):
         st.markdown(
-            f'<div class="table-row" style="grid-template-columns:{grid};">' +
+            f'<div class="table-row" style="grid-template-columns: {grid};">' +
             "".join(f"<div>{safe_text(row.get(col, EMPTY_DISPLAY))}</div>" for col in columns) +
             '</div>',
             unsafe_allow_html=True
@@ -620,7 +623,7 @@ def render_table_container(df, columns, headers, row_label, search_text, grid_te
 
 
 def merge_contact_info(df, primary_col, fallback_col):
-    """Build a display contact field by preferring a primary column over fallback."""
+    """Build a display contact field preferring primary_col, falling back to fallback_col."""
     primary = df[primary_col] if primary_col in df.columns else pd.Series("", index=df.index)
     fallback = df[fallback_col] if fallback_col in df.columns else pd.Series("", index=df.index)
     primary = primary.replace("", pd.NA)
@@ -796,7 +799,7 @@ if page == "Dashboard":
             status  = str(row.get("Status", ""))
             badge_cls = "badge-success" if status.lower() == "sent" else "badge-warning"
             ch_badge  = "badge-purple" if "email" in channel.lower() else "badge-warning"
-            recipient_raw = str(row.get("Recipient", "") or "").strip()
+            recipient_raw = str(row.get("Recipient", "")).strip()
             recipient = safe_text(recipient_raw or "—")
             date_txt = safe_text(row.get("Date", ""))
             msg_excerpt = safe_text(
