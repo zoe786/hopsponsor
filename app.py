@@ -45,6 +45,19 @@ BRAND_ICON = "✦"
 EMPTY_DISPLAY = "—"
 MAX_ACTIVITY_MESSAGE_LENGTH = 96
 MAX_STYLE_MESSAGE_LENGTH = 88
+CORE_ICON_MAP = {
+    "Dashboard": "📊",
+    "Sponsors": "👥",
+    "Students": "🎓",
+    "Messages": "✉️",
+    "Reports": "📁",
+    "Schedule": "🗓️",
+}
+INTEL_ICON_MAP = {
+    "AI Intelligence": "🧠",
+    "Style Library": "🎨",
+    "Message History": "🕘",
+}
 
 # Ensure data folders exist
 os.makedirs("data", exist_ok=True)
@@ -514,7 +527,7 @@ st.markdown("""
         line-height: 1.4;
     }
 
-    button:focus-visible, input:focus-visible, textarea:focus-visible {
+    button:focus, button:focus-visible, input:focus, input:focus-visible, textarea:focus, textarea:focus-visible {
         outline: 2px solid rgba(167,139,250,0.65) !important;
         outline-offset: 1px !important;
     }
@@ -608,7 +621,17 @@ def merge_contact_info(df, primary_col, fallback_col):
     """Build a display contact field by preferring a primary column over fallback."""
     primary = df[primary_col] if primary_col in df.columns else pd.Series("", index=df.index)
     fallback = df[fallback_col] if fallback_col in df.columns else pd.Series("", index=df.index)
-    return primary.replace("", pd.NA).fillna(fallback.replace("", pd.NA)).fillna(EMPTY_DISPLAY)
+    primary = primary.replace("", pd.NA)
+    fallback = fallback.replace("", pd.NA)
+    return primary.mask(primary.isna(), fallback).fillna(EMPTY_DISPLAY)
+
+
+def truncate_message(text, max_length, default_text):
+    """Return truncated display text with ellipsis and fallback default."""
+    content = str(text or "").strip()
+    if not content:
+        return default_text
+    return (content[:max_length] + "…") if len(content) > max_length else content
 
 
 # ============================================
@@ -655,21 +678,12 @@ with st.sidebar:
     if "active_section" not in st.session_state:
         st.session_state.active_section = "core"
 
-    core_icon_map = {
-        "Dashboard": "📊",
-        "Sponsors": "👥",
-        "Students": "🎓",
-        "Messages": "✉️",
-        "Reports": "📁",
-        "Schedule": "🗓️",
-    }
-
     core_sel = st.radio(
         "core_nav",
         core_pages,
         label_visibility="collapsed",
         key="core_radio",
-        format_func=lambda p: f"{core_icon_map.get(p, '•')}  {p}",
+        format_func=lambda p: f"{CORE_ICON_MAP.get(p, '•')}  {p}",
     )
 
     st.markdown('<div style="margin-top:0.5rem"></div>', unsafe_allow_html=True)
@@ -678,18 +692,12 @@ with st.sidebar:
     st.markdown('<div class="sidebar-section-label">INTELLIGENCE</div>', unsafe_allow_html=True)
     intel_pages = ["AI Intelligence", "Style Library", "Message History"]
 
-    intel_icon_map = {
-        "AI Intelligence": "🧠",
-        "Style Library": "🎨",
-        "Message History": "🕘",
-    }
-
     intel_sel = st.radio(
         "intel_nav",
         intel_pages,
         label_visibility="collapsed",
         key="intel_radio",
-        format_func=lambda p: f"{intel_icon_map.get(p, '•')}  {p}",
+        format_func=lambda p: f"{INTEL_ICON_MAP.get(p, '•')}  {p}",
     )
 
     # Determine active page: whichever radio was last interacted with
@@ -784,11 +792,8 @@ if page == "Dashboard":
             recipient_raw = str(row.get("Recipient", "") or "").strip()
             recipient = safe_text(recipient_raw or "—")
             date_txt = safe_text(row.get("Date", ""))
-            msg_raw = str(row.get("Message", "") or "").strip()
             msg_excerpt = safe_text(
-                (msg_raw[:MAX_ACTIVITY_MESSAGE_LENGTH] + "…")
-                if len(msg_raw) > MAX_ACTIVITY_MESSAGE_LENGTH
-                else (msg_raw or "No message body")
+                truncate_message(row.get("Message", ""), MAX_ACTIVITY_MESSAGE_LENGTH, "No message body")
             )
             avatar = safe_text(recipient_raw[:1].upper() if recipient_raw else "?")
 
@@ -880,9 +885,9 @@ elif page == "Sponsors":
 
     if not df.empty:
         sponsors_view = df.copy()
-        sponsors_view["Sponsor"] = sponsors_view.get("Name", "")
+        sponsors_view["Sponsor"] = sponsors_view["Name"] if "Name" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
         sponsors_view["Contact"] = merge_contact_info(sponsors_view, "Email", "WhatsApp")
-        sponsors_view["Notes"] = sponsors_view.get("Notes", "")
+        sponsors_view["Notes"] = sponsors_view["Notes"] if "Notes" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
         sponsors_view["Actions"] = "Manage below"
         render_table_container(
             sponsors_view,
@@ -1001,9 +1006,9 @@ elif page == "Students":
 
     if not df.empty:
         students_view = df.copy()
-        students_view["Student"] = students_view.get("name", "")
-        students_view["Contact"] = students_view.get("contact_info", "")
-        students_view["Notes"] = students_view.get("notes", "")
+        students_view["Student"] = students_view["name"] if "name" in students_view.columns else pd.Series("", index=students_view.index)
+        students_view["Contact"] = students_view["contact_info"] if "contact_info" in students_view.columns else pd.Series("", index=students_view.index)
+        students_view["Notes"] = students_view["notes"] if "notes" in students_view.columns else pd.Series("", index=students_view.index)
         students_view["Actions"] = "Manage below"
         render_table_container(
             students_view,
@@ -1153,11 +1158,8 @@ elif page == "AI Intelligence":
                 for _, srow in styles_df.head(6).iterrows():
                     cat = safe_text(srow.get("Category", ""))
                     gold = "⭐ " if srow.get("Golden") else ""
-                    msg = str(srow.get("Message", "") or "").strip()
                     msg_excerpt = safe_text(
-                        (msg[:MAX_STYLE_MESSAGE_LENGTH] + "…")
-                        if len(msg) > MAX_STYLE_MESSAGE_LENGTH
-                        else (msg or "Style example")
+                        truncate_message(srow.get("Message", ""), MAX_STYLE_MESSAGE_LENGTH, "Style example")
                     )
                     st.markdown(
                         f'<div class="ref-style-card"><div class="ref-style-title">{gold}{cat}</div><div class="ref-style-text">{msg_excerpt}</div></div>',
