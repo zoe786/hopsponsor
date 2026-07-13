@@ -41,6 +41,8 @@ import os
 import pandas as pd
 import html
 
+BRAND_ICON = "✦"
+
 # Ensure data folders exist
 os.makedirs("data", exist_ok=True)
 os.makedirs("data/reports", exist_ok=True)
@@ -566,6 +568,7 @@ st.markdown("""
 
 
 def safe_text(value):
+    """Return UI-safe text by normalizing empty values and escaping HTML."""
     if value is None:
         return "—"
     text = str(value).strip()
@@ -574,13 +577,14 @@ def safe_text(value):
     return html.escape(text)
 
 
-def render_table_container(df, columns, headers, row_label, search_text):
+def render_table_container(df, columns, headers, row_label, search_text, grid_template=None):
+    """Render a reusable dark table container with search context and rows."""
     st.markdown('<div class="table-container fade-in">', unsafe_allow_html=True)
     st.markdown(
         f'<div class="table-search-row"><span>{len(df)} {row_label} found</span><span>Search: {safe_text(search_text) if search_text else "All"}</span></div>',
         unsafe_allow_html=True
     )
-    grid = "1.2fr 1fr 1.2fr 0.8fr"
+    grid = grid_template or " ".join(["1fr"] * max(len(columns), 1))
     st.markdown(
         f'<div class="table-header-row" style="grid-template-columns:{grid};">' +
         "".join(f"<div>{safe_text(h)}</div>" for h in headers) +
@@ -602,9 +606,9 @@ def render_table_container(df, columns, headers, row_label, search_text):
 # ============================================
 with st.sidebar:
     # Logo
-    st.markdown('''
+    st.markdown(f'''
     <div class="hope-logo">
-        <span class="sidebar-brand-icon">✦</span>
+        <span class="sidebar-brand-icon">{BRAND_ICON}</span>
         <span class="accent">HOP</span><span>e</span>
     </div>
     ''', unsafe_allow_html=True)
@@ -702,8 +706,7 @@ with st.sidebar:
     ''', unsafe_allow_html=True)
     st.markdown('<div style="padding-top:0.4rem"></div>', unsafe_allow_html=True)
     if st.button("↩ Logout", type="secondary", use_container_width=True):
-        for k in list(st.session_state.keys()):
-            del st.session_state[k]
+        st.session_state.clear()
         st.rerun()
 
 
@@ -864,18 +867,18 @@ elif page == "Sponsors":
     if not df.empty:
         sponsors_view = df.copy()
         sponsors_view["Sponsor"] = sponsors_view.get("Name", "")
-        sponsors_view["Contact"] = sponsors_view.apply(
-            lambda r: r.get("Email") or r.get("WhatsApp") or "—",
-            axis=1
-        )
+        email_series = sponsors_view["Email"] if "Email" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
+        whatsapp_series = sponsors_view["WhatsApp"] if "WhatsApp" in sponsors_view.columns else pd.Series("", index=sponsors_view.index)
+        sponsors_view["Contact"] = email_series.replace("", pd.NA).fillna(whatsapp_series.replace("", pd.NA)).fillna("—")
         sponsors_view["Notes"] = sponsors_view.get("Notes", "")
-        sponsors_view["Actions"] = "Edit / Delete"
+        sponsors_view["Actions"] = "Manage below"
         render_table_container(
             sponsors_view,
             columns=["Sponsor", "Contact", "Notes", "Actions"],
             headers=["Sponsor", "Contact", "Notes", "Actions"],
             row_label=f'sponsor{"s" if len(df) != 1 else ""}',
-            search_text=search_q
+            search_text=search_q,
+            grid_template="1.2fr 1fr 1.2fr 0.8fr"
         )
 
         st.markdown('<div class="section-subheader">Edit or Remove Sponsor</div>', unsafe_allow_html=True)
@@ -989,13 +992,14 @@ elif page == "Students":
         students_view["Student"] = students_view.get("name", "")
         students_view["Contact"] = students_view.get("contact_info", "")
         students_view["Notes"] = students_view.get("notes", "")
-        students_view["Actions"] = "Edit / Delete"
+        students_view["Actions"] = "Manage below"
         render_table_container(
             students_view,
             columns=["Student", "Contact", "Notes", "Actions"],
             headers=["Student", "Contact", "Notes", "Actions"],
             row_label=f'student{"s" if len(df) != 1 else ""}',
-            search_text=student_search
+            search_text=student_search,
+            grid_template="1.2fr 1fr 1.2fr 0.8fr"
         )
 
         st.markdown('<div class="section-subheader">Edit or Remove Student</div>', unsafe_allow_html=True)
