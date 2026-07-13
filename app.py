@@ -590,7 +590,7 @@ def safe_text(value):
     if value is None:
         return html.escape(EMPTY_DISPLAY)
     text = str(value).strip()
-    if not text or text.lower() == "nan":
+    if not text or text.lower() in {"nan", "<na>"}:
         return html.escape(EMPTY_DISPLAY)
     return html.escape(text)
 
@@ -605,7 +605,7 @@ def render_table_container(df, columns, headers, row_label, search_text, grid_te
         f'<div class="table-search-row"><span>{len(df)} {row_label} found</span><span>Search: {safe_text(search_text) if search_text else "All"}</span></div>',
         unsafe_allow_html=True
     )
-    grid = grid_template or " ".join(["1fr"] * max(len(columns), 1))
+    grid = grid_template or " ".join(["1fr"] * len(columns))
     st.markdown(
         f'<div class="table-header-row" style="grid-template-columns: {grid};">' +
         "".join(f"<div>{safe_text(h)}</div>" for h in headers) +
@@ -626,9 +626,7 @@ def merge_contact_info(df, primary_col, fallback_col):
     """Build a display contact field preferring primary_col, falling back to fallback_col."""
     primary = df[primary_col] if primary_col in df.columns else pd.Series("", index=df.index)
     fallback = df[fallback_col] if fallback_col in df.columns else pd.Series("", index=df.index)
-    primary = primary.replace("", pd.NA)
-    fallback = fallback.replace("", pd.NA)
-    return primary.mask(primary.isna(), fallback).fillna(EMPTY_DISPLAY)
+    return primary.mask(primary.eq("") | primary.isna(), fallback).fillna(EMPTY_DISPLAY)
 
 
 def get_column_or_empty(df, column_name):
@@ -638,7 +636,7 @@ def get_column_or_empty(df, column_name):
 
 def truncate_message(text, max_length, default_text):
     """Return truncated display text with ellipsis and fallback default."""
-    content = str(text or "").strip()
+    content = str(text).strip() if text is not None else ""
     if not content:
         return default_text
     return (content[:max_length] + "…") if len(content) > max_length else content
@@ -733,7 +731,7 @@ with st.sidebar:
     </div>
     ''', unsafe_allow_html=True)
     st.markdown('<div style="padding-top:0.4rem"></div>', unsafe_allow_html=True)
-    if st.button("↩ Logout", type="secondary", use_container_width=True):
+    if st.button("Logout", type="secondary", use_container_width=True):
         st.session_state.clear()
         st.rerun()
 
@@ -805,7 +803,7 @@ if page == "Dashboard":
             msg_excerpt = safe_text(
                 truncate_message(row.get("Message", ""), MAX_ACTIVITY_MESSAGE_LENGTH, "No message body")
             )
-            avatar = safe_text(recipient_raw[:1].upper() if recipient_raw else DEFAULT_AVATAR)
+            avatar = html.escape(recipient_raw[:1].upper() if recipient_raw else DEFAULT_AVATAR)
 
             st.markdown(f'''
             <div class="activity-row">
