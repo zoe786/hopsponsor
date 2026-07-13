@@ -1,0 +1,38 @@
+{
+  "name": "hopsponsor",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.511.0",
+    "next": "^15.5.20",
+    "openai": "^4.103.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.4.1",
+    "recharts": "^3.1.0",
+    "resend": "^4.5.2",
+    "twilio": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.20",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "next": {
+      "postcss": ">=8.5.10"
+    }
+  }
+}
