@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMessages, addMessage } from "@/lib/db";
+import { addMessage, getMessages, getSponsor } from "@/lib/db";
 import { sendEmail, sendWhatsApp } from "@/lib/ai";
-import { getSponsors } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -21,8 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "recipient, channel and message are required" }, { status: 400 });
     }
 
-    const sponsors = getSponsors();
-    const sponsor = sponsors.find((s) => s.id === Number(recipient) || s.name === recipient);
+    const sponsor = getSponsor(Number(recipient));
     if (!sponsor) {
       return NextResponse.json({ success: false, error: "Sponsor not found" }, { status: 404 });
     }
