@@ -183,6 +183,7 @@ function initializeDatabase(db: Database.Database) {
   }
 
   const defaultGrades = [
+    "No Class",
     "Baby Class",
     "KG 1",
     "KG 2",
