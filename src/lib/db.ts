@@ -517,6 +517,10 @@ export function updateReportSent(reportId: number, sentTo: string): void {
     .run(sentTo, reportId);
 }
 
+export function deleteReport(id: number): void {
+  getDb().prepare("DELETE FROM reports WHERE id = ?").run(id);
+}
+
 export function addPaymentCommitment(
   sponsorId: number,
   studentId: number | null,
