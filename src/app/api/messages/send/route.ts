@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (result.success) {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
       addMessage(today, sponsor.name, channel, "Outbound", message, "Sent");
     }
 
