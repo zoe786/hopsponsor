@@ -183,6 +183,7 @@ function initializeDatabase(db: Database.Database) {
   }
 
   const defaultGrades = [
+    "No Class",
     "Baby Class",
     "KG 1",
     "KG 2",
@@ -514,6 +515,10 @@ export function updateReportSent(reportId: number, sentTo: string): void {
   getDb()
     .prepare("UPDATE reports SET message_sent = 1, sent_to = ? WHERE id = ?")
     .run(sentTo, reportId);
+}
+
+export function deleteReport(id: number): void {
+  getDb().prepare("DELETE FROM reports WHERE id = ?").run(id);
 }
 
 export function addPaymentCommitment(
