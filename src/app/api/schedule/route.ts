@@ -6,6 +6,10 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") ?? "pending";
+  const allowed = new Set(["pending", "sent", "failed", "cancelled"]);
+  if (!allowed.has(status)) {
+    return NextResponse.json({ success: false, error: "Invalid status filter" }, { status: 400 });
+  }
   try {
     const messages = query(
       `SELECT sm.*, COALESCE(sp.name, sm.recipient) AS recipient_name

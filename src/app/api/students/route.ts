@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       ]
     );
 
-    if (!result.lastInsertRowid) {
+    if (result.changes === 0) {
       return NextResponse.json({ success: false, error: "Failed to create student" }, { status: 500 });
     }
 

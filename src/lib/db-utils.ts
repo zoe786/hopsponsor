@@ -134,8 +134,11 @@ function ensureSeedData() {
         ]
       );
     }
-  } finally {
     seedChecked = true;
+  } catch (err) {
+    seedChecked = false;
+    throw err;
+  } finally {
     seedInProgress = false;
   }
 }

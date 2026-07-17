@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 import { get, run } from "@/lib/db-utils";
 import { sendEmailWithAttachment } from "@/lib/ai";
 
@@ -43,15 +44,16 @@ export async function POST(req: NextRequest) {
 
     for (const file of files) {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const storedName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+      const storedName = `${Date.now()}_${randomUUID()}_${safeName}`;
       const absolutePath = path.join(uploadsDir, storedName);
       const relativePath = `uploads/reports/${storedName}`;
       const data = Buffer.from(await file.arrayBuffer());
       fs.writeFileSync(absolutePath, data);
 
+      const uploadDate = new Date().toISOString();
       const insert = run(
-        "INSERT INTO reports (student_id, file_path, file_name, upload_date, message_sent, sent_to) VALUES (?, ?, ?, datetime('now'), 0, NULL)",
-        [student.id, relativePath, file.name]
+        "INSERT INTO reports (student_id, file_path, file_name, upload_date, message_sent, sent_to) VALUES (?, ?, ?, ?, 0, NULL)",
+        [student.id, relativePath, file.name, uploadDate]
       );
       const reportId = insert.lastInsertRowid;
 
