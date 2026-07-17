@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addMessage, getSponsor } from "@/lib/db";
+import { get, run } from "@/lib/db-utils";
 import { sendEmail, sendWhatsApp } from "@/lib/ai";
 
 export const runtime = "nodejs";
@@ -14,7 +14,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sponsor = getSponsor(Number(recipient));
+    const sponsor = get<{ id: number; name: string; email: string; whatsapp: string }>(
+      "SELECT id, name, email, whatsapp FROM sponsors WHERE id = ?",
+      [Number(recipient)]
+    );
     if (!sponsor) {
       return NextResponse.json({ success: false, error: "Sponsor not found" }, { status: 404 });
     }
@@ -41,8 +44,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (result.success) {
-      const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
-      addMessage(today, sponsor.name, channel, "Outbound", message, "Sent");
+      const today = new Date().toISOString().split("T")[0];
+      run(
+        "INSERT INTO message_history (date, recipient, channel, direction, message, status) VALUES (?, ?, ?, ?, ?, ?)",
+        [today, sponsor.name, channel, "Outbound", message, "Sent"]
+      );
     }
 
     return NextResponse.json(result);

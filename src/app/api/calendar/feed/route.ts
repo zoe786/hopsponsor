@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCalendarEvents, getScheduledMessages } from "@/lib/db";
+import { query } from "@/lib/db-utils";
 
 export const runtime = "nodejs";
 
@@ -18,8 +18,29 @@ function toIcsDate(value: string) {
 export async function GET(req: NextRequest) {
   try {
     const origin = new URL(req.url).origin;
-    const events = getCalendarEvents();
-    const scheduled = getScheduledMessages("pending");
+    const events = query<{
+      id: number;
+      title: string;
+      description: string;
+      start_time: string;
+      end_time: string | null;
+      location: string | null;
+    }>("SELECT id, title, description, start_time, end_time, location FROM calendar_events ORDER BY start_time ASC");
+    const scheduled = query<{
+      id: number;
+      recipient: string;
+      recipient_name: string;
+      channel: string;
+      subject: string;
+      message: string;
+      send_time: string;
+    }>(
+      `SELECT sm.id, sm.recipient, COALESCE(sp.name, sm.recipient) as recipient_name, sm.channel, sm.subject, sm.message, sm.send_time
+       FROM scheduled_messages sm
+       LEFT JOIN sponsors sp ON sm.recipient_id = sp.id
+       WHERE sm.status = 'pending'
+       ORDER BY sm.send_time ASC`
+    );
 
     const lines = [
       "BEGIN:VCALENDAR",

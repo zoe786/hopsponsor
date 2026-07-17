@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getScheduledMessage, updateScheduledMessageStatus } from "@/lib/db";
+import { get, run } from "@/lib/db-utils";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
   }
 
   try {
-    const scheduled = getScheduledMessage(messageId);
+    const scheduled = get<{ id: number; status: string }>(
+      "SELECT id, status FROM scheduled_messages WHERE id = ?",
+      [messageId]
+    );
     if (!scheduled) {
       return NextResponse.json({ success: false, error: "Scheduled message not found" }, { status: 404 });
     }
@@ -23,7 +26,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       return NextResponse.json({ success: false, error: "Sent messages cannot be cancelled" }, { status: 400 });
     }
 
-    updateScheduledMessageStatus(messageId, "cancelled");
+    run("UPDATE scheduled_messages SET status = 'cancelled' WHERE id = ?", [messageId]);
     return NextResponse.json({ success: true, data: { id: messageId, status: "cancelled" } });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addScheduledMessage, getScheduledMessages, getSponsor } from "@/lib/db";
+import { get, query, run } from "@/lib/db-utils";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
+  const status = searchParams.get("status") ?? "pending";
   try {
-    const messages = getScheduledMessages(status ?? undefined);
+    const messages = query(
+      `SELECT sm.*, COALESCE(sp.name, sm.recipient) AS recipient_name
+       FROM scheduled_messages sm
+       LEFT JOIN sponsors sp ON sm.recipient_id = sp.id
+       WHERE sm.status = ?
+       ORDER BY sm.send_time ASC`,
+      [status]
+    );
     return NextResponse.json({ success: true, data: messages });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
@@ -39,7 +46,7 @@ export async function POST(req: NextRequest) {
     let resolvedName: string = String(recipient ?? "");
 
     if (recipient_id) {
-      const sponsor = getSponsor(Number(recipient_id));
+      const sponsor = get<{ id: number; name: string }>("SELECT id, name FROM sponsors WHERE id = ?", [Number(recipient_id)]);
       if (!sponsor) {
         return NextResponse.json({ success: false, error: "Sponsor not found" }, { status: 404 });
       }
@@ -47,14 +54,12 @@ export async function POST(req: NextRequest) {
       resolvedName = sponsor.name;
     }
 
-    const id = addScheduledMessage(
-      resolvedId,
-      resolvedName,
-      channel,
-      String(subject).trim(),
-      String(message).trim(),
-      parsedTime.toISOString()
+    const result = run(
+      `INSERT INTO scheduled_messages (recipient, recipient_id, channel, subject, message, send_time, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
+      [resolvedName, resolvedId, channel, String(subject).trim(), String(message).trim(), parsedTime.toISOString()]
     );
+    const id = result.lastInsertRowid;
 
     return NextResponse.json({ success: true, data: { id } }, { status: 201 });
   } catch (err) {
