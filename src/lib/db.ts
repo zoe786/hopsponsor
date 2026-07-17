@@ -22,7 +22,7 @@ import type {
   CalendarEvent,
 } from "./types";
 
-const DB_PATH = process.env.DB_PATH || "./data/sponsor_assistant.db";
+const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), "data", "sponsor_assistant.db");
 
 function ensureDir(filePath: string) {
   const dir = path.dirname(filePath);
