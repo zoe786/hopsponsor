@@ -32,6 +32,15 @@ function nextStudentCode(): string {
   return `STU-${String((row?.max_code ?? 0) + 1).padStart(4, "0")}`;
 }
 
+export function generateNextStudentCode(): string {
+  ensureSeedData();
+  return nextStudentCode();
+}
+
+export function todayDateString(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
 function ensureSeedData() {
   if (seedChecked || seedInProgress) return;
   seedInProgress = true;
@@ -125,7 +134,7 @@ function ensureSeedData() {
       rawRun(
         "INSERT INTO message_history (date, recipient, channel, direction, message, status) VALUES (?, ?, ?, ?, ?, ?)",
         [
-          new Date().toISOString().split("T")[0],
+          todayDateString(),
           "John Kamau",
           "Email",
           "Outbound",

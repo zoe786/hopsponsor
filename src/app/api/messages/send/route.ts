@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { get, run } from "@/lib/db-utils";
+import { get, run, todayDateString } from "@/lib/db-utils";
 import { sendEmail, sendWhatsApp } from "@/lib/ai";
 
 export const runtime = "nodejs";
@@ -44,10 +44,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (result.success) {
-      const today = new Date().toISOString().split("T")[0];
       run(
         "INSERT INTO message_history (date, recipient, channel, direction, message, status) VALUES (?, ?, ?, ?, ?, ?)",
-        [today, sponsor.name, channel, "Outbound", message, "Sent"]
+        [todayDateString(), sponsor.name, channel, "Outbound", message, "Sent"]
       );
     }
 

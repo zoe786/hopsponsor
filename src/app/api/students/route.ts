@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { get, query, run } from "@/lib/db-utils";
+import { generateNextStudentCode, query, run } from "@/lib/db-utils";
 
 export const runtime = "nodejs";
 
@@ -32,12 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Name is required" }, { status: 400 });
     }
 
-    const row = get<{ max_code: number | null }>(
-      "SELECT MAX(CAST(SUBSTR(student_code, 5) AS INTEGER)) as max_code FROM students WHERE student_code LIKE 'STU-%'"
-    );
-    const code = `STU-${String((row?.max_code ?? 0) + 1).padStart(4, "0")}`;
+    const code = generateNextStudentCode();
 
-    const result = run(
+    run(
       `INSERT INTO students
          (student_code, name, age, contact_info, address, grade_id, sponsor_id, auto_send, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -53,10 +50,6 @@ export async function POST(req: NextRequest) {
         notes,
       ]
     );
-
-    if (result.changes === 0) {
-      return NextResponse.json({ success: false, error: "Failed to create student" }, { status: 500 });
-    }
 
     return NextResponse.json({ success: true, data: { student_code: code } }, { status: 201 });
   } catch (err) {

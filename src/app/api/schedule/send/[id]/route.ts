@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { get, run } from "@/lib/db-utils";
+import { get, run, todayDateString } from "@/lib/db-utils";
 import { sendEmail, sendWhatsApp } from "@/lib/ai";
 
 export const runtime = "nodejs";
@@ -86,7 +86,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
     run(
       "INSERT INTO message_history (date, recipient, channel, direction, message, status) VALUES (?, ?, ?, ?, ?, ?)",
-      [new Date().toISOString().split("T")[0], sponsor.name, scheduled.channel, "Outbound", scheduled.message, "Sent"]
+      [todayDateString(), sponsor.name, scheduled.channel, "Outbound", scheduled.message, "Sent"]
     );
     run("UPDATE scheduled_messages SET status = 'sent' WHERE id = ?", [scheduled.id]);
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { get, run } from "@/lib/db-utils";
+import { get, run, todayDateString } from "@/lib/db-utils";
 import { sendEmailWithAttachment } from "@/lib/ai";
 
 export const runtime = "nodejs";
@@ -43,10 +43,11 @@ export async function POST(req: NextRequest) {
     const results: Array<{ id: number; file_name: string; sent: boolean; sent_to: string | null }> = [];
 
     for (const file of files) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const originalName = path.basename(file.name);
+      const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, "_");
       const storedName = `${Date.now()}_${randomUUID()}_${safeName}`;
       const absolutePath = path.join(uploadsDir, storedName);
-      const relativePath = `uploads/reports/${storedName}`;
+      const relativePath = path.join("uploads", "reports", storedName);
       const data = Buffer.from(await file.arrayBuffer());
       fs.writeFileSync(absolutePath, data);
 
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
           run(
             "INSERT INTO message_history (date, recipient, channel, direction, message, status) VALUES (?, ?, ?, ?, ?, ?)",
             [
-              new Date().toISOString().split("T")[0],
+              todayDateString(),
               student.sponsor_name ?? "Sponsor",
               "Email",
               "Outbound",
