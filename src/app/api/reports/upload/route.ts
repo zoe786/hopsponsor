@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { get, query, run } from "@/lib/db-utils";
+import { get, run } from "@/lib/db-utils";
 import { sendEmailWithAttachment } from "@/lib/ai";
 
 export const runtime = "nodejs";
