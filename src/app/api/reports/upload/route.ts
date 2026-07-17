@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       const data = Buffer.from(await file.arrayBuffer());
       fs.writeFileSync(absolutePath, data);
 
-      const uploadDate = new Date().toISOString();
+      const uploadDate = todayDateString();
       const insert = run(
         "INSERT INTO reports (student_id, file_path, file_name, upload_date, message_sent, sent_to) VALUES (?, ?, ?, ?, 0, NULL)",
         [student.id, relativePath, file.name, uploadDate]
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
           `Student Report - ${student.name}`,
           body,
           data,
-          file.name
+          safeName
         );
 
         if (emailResult.success) {
